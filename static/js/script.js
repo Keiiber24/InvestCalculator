@@ -2,7 +2,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('calculator-form');
     const resultDiv = document.getElementById('result');
     const chartCanvas = document.getElementById('risk-chart');
-    const themeToggle = document.getElementById('theme-toggle');
     const calculateBtn = document.getElementById('calculateBtn');
     const spinner = calculateBtn.querySelector('.spinner-border');
     let chart = null;
@@ -65,12 +64,6 @@ document.addEventListener('DOMContentLoaded', function() {
             input.value = value;
             input.dispatchEvent(new Event('input'));
         });
-    });
-
-    // Theme toggle
-    themeToggle.addEventListener('change', function() {
-        document.documentElement.classList.toggle('dark');
-        updateChartTheme();
     });
 
     // Form submission
@@ -189,8 +182,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 datasets: [{
                     data: [result.capitalAtRisk, remainingCapital],
                     backgroundColor: [
-                        'rgba(241, 196, 15, 0.8)',
-                        'rgba(52, 152, 219, 0.8)'
+                        'rgba(241, 196, 15, 0.8)',  // Warning color (gold)
+                        'rgba(52, 152, 219, 0.8)'   // Info color (blue)
                     ],
                     borderColor: [
                         'rgba(241, 196, 15, 1)',
@@ -205,30 +198,17 @@ document.addEventListener('DOMContentLoaded', function() {
                     legend: {
                         position: 'top',
                         labels: {
-                            color: getComputedStyle(document.documentElement)
-                                .getPropertyValue('--bs-text-light')
+                            color: 'var(--bs-text-light)'
                         }
                     },
                     title: {
                         display: true,
                         text: 'Capital Distribution',
-                        color: getComputedStyle(document.documentElement)
-                            .getPropertyValue('--bs-text-light')
+                        color: 'var(--bs-text-light)'
                     }
                 }
             }
         });
-    }
-
-    function updateChartTheme() {
-        if (!chart) return;
-
-        const textColor = getComputedStyle(document.documentElement)
-            .getPropertyValue('--bs-text-light');
-
-        chart.options.plugins.legend.labels.color = textColor;
-        chart.options.plugins.title.color = textColor;
-        chart.update();
     }
 
     function formatNumber(num) {

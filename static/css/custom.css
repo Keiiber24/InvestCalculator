@@ -195,31 +195,6 @@ body {
     margin-right: 0.5rem;
 }
 
-/* Dark Mode Toggle */
-.form-check-label {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    color: var(--bs-text-light);
-    font-weight: 500;
-}
-
-.form-switch .form-check-input {
-    width: 2.5em;
-    margin-left: -2.5em;
-    transition: background-position var(--transition-speed) ease-in-out;
-}
-
-.form-switch .form-check-input:checked {
-    background-color: var(--bs-warning);
-    border-color: var(--bs-warning);
-}
-
-/* Chart Container */
-#risk-chart {
-    padding: 1rem;
-}
-
 /* Animations */
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(20px); }
