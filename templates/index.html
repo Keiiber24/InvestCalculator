@@ -5,54 +5,122 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Trading Calculator</title>
     <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/custom.css') }}">
 </head>
 <body>
     <div class="container py-4">
-        <h1 class="text-center mb-4">Trading Calculator</h1>
-        
-        <div class="d-flex justify-content-end mb-3">
-            <div class="form-check form-switch">
-                <input class="form-check-input" type="checkbox" id="theme-toggle">
-                <label class="form-check-label" for="theme-toggle">Dark Mode</label>
-            </div>
-        </div>
+        <div class="row justify-content-center">
+            <div class="col-lg-10">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h1 class="display-4 fw-bold text-gradient">Trading Calculator</h1>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="theme-toggle">
+                        <label class="form-check-label" for="theme-toggle">
+                            <i class="bi bi-moon-stars-fill"></i>
+                            Dark Mode
+                        </label>
+                    </div>
+                </div>
 
-        <form id="calculator-form" class="mb-4 p-4 rounded shadow">
-            <div class="row g-3">
-                <div class="col-md-6">
-                    <label for="capitalTotal" class="form-label">Capital Total</label>
-                    <input type="number" class="form-control" id="capitalTotal" name="capitalTotal" step="0.01" required data-bs-toggle="tooltip" data-bs-placement="top" title="Enter your total trading capital">
-                </div>
-                <div class="col-md-6">
-                    <label for="baseCurrency" class="form-label">Base Currency</label>
-                    <input type="text" class="form-control" id="baseCurrency" name="baseCurrency" required data-bs-toggle="tooltip" data-bs-placement="top" title="Enter the base currency (e.g., USD, EUR)">
-                </div>
-                <div class="col-md-6">
-                    <label for="riskPercentage" class="form-label">Risk Percentage</label>
-                    <input type="number" class="form-control" id="riskPercentage" name="riskPercentage" step="0.01" required data-bs-toggle="tooltip" data-bs-placement="top" title="Enter the percentage of capital you're willing to risk">
-                </div>
-                <div class="col-md-6">
-                    <label for="entryPrice" class="form-label">Entry Price</label>
-                    <input type="number" class="form-control" id="entryPrice" name="entryPrice" step="0.01" required data-bs-toggle="tooltip" data-bs-placement="top" title="Enter your planned entry price">
-                </div>
-                <div class="col-md-6">
-                    <label for="exitPrice" class="form-label">Exit/Stop Loss Price</label>
-                    <input type="number" class="form-control" id="exitPrice" name="exitPrice" step="0.01" required data-bs-toggle="tooltip" data-bs-placement="top" title="Enter your planned exit or stop loss price">
-                </div>
-            </div>
-            <div class="text-center mt-4">
-                <button type="submit" class="btn custom-warning btn-lg px-5">Calculate</button>
-            </div>
-        </form>
+                <div class="card shadow-lg border-0 mb-4">
+                    <div class="card-body p-4">
+                        <form id="calculator-form" class="needs-validation" novalidate>
+                            <div class="row g-4">
+                                <!-- Capital Total Input -->
+                                <div class="col-md-6">
+                                    <div class="form-floating">
+                                        <input type="number" class="form-control" id="capitalTotal" name="capitalTotal" 
+                                               placeholder="Enter capital total" step="0.01" required>
+                                        <label for="capitalTotal">Capital Total</label>
+                                        <div class="invalid-feedback">
+                                            Please enter a valid capital amount
+                                        </div>
+                                    </div>
+                                </div>
 
-        <div id="result" class="mb-4"></div>
+                                <!-- Currency Selector -->
+                                <div class="col-md-6">
+                                    <div class="form-floating">
+                                        <select class="form-select" id="baseCurrency" name="baseCurrency" required>
+                                            <option value="">Select currency</option>
+                                            <option value="USD">🇺🇸 USD</option>
+                                            <option value="EUR">🇪🇺 EUR</option>
+                                            <option value="GBP">🇬🇧 GBP</option>
+                                            <option value="JPY">🇯🇵 JPY</option>
+                                            <option value="AUD">🇦🇺 AUD</option>
+                                        </select>
+                                        <label for="baseCurrency">Base Currency</label>
+                                        <div class="invalid-feedback">
+                                            Please select a currency
+                                        </div>
+                                    </div>
+                                </div>
 
-        <div class="card mb-4">
-            <div class="card-body">
-                <canvas id="risk-chart"></canvas>
+                                <!-- Risk Percentage Input -->
+                                <div class="col-md-6">
+                                    <div class="form-floating">
+                                        <div class="input-group">
+                                            <button type="button" class="btn btn-outline-secondary" data-action="decrement">
+                                                <i class="bi bi-dash"></i>
+                                            </button>
+                                            <input type="number" class="form-control" id="riskPercentage" name="riskPercentage" 
+                                                   placeholder="Enter risk percentage" step="0.1" min="0" max="100" required>
+                                            <button type="button" class="btn btn-outline-secondary" data-action="increment">
+                                                <i class="bi bi-plus"></i>
+                                            </button>
+                                            <label for="riskPercentage">Risk Percentage</label>
+                                        </div>
+                                        <div class="invalid-feedback">
+                                            Please enter a valid percentage (0-100)
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Entry Price Input -->
+                                <div class="col-md-6">
+                                    <div class="form-floating">
+                                        <input type="number" class="form-control" id="entryPrice" name="entryPrice" 
+                                               placeholder="Enter entry price" step="0.01" required>
+                                        <label for="entryPrice">Entry Price</label>
+                                        <div class="invalid-feedback">
+                                            Please enter a valid entry price
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Exit Price Input -->
+                                <div class="col-md-6">
+                                    <div class="form-floating">
+                                        <input type="number" class="form-control" id="exitPrice" name="exitPrice" 
+                                               placeholder="Enter exit price" step="0.01" required>
+                                        <label for="exitPrice">Exit/Stop Loss Price</label>
+                                        <div class="invalid-feedback">
+                                            Please enter a valid exit price
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="text-center mt-4">
+                                <button type="submit" class="btn btn-warning btn-lg px-5" id="calculateBtn">
+                                    <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                                    Calculate
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <div id="result" class="mb-4"></div>
+
+                <div class="card shadow-lg border-0 mb-4">
+                    <div class="card-body">
+                        <canvas id="risk-chart"></canvas>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

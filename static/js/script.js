@@ -3,7 +3,69 @@ document.addEventListener('DOMContentLoaded', function() {
     const resultDiv = document.getElementById('result');
     const chartCanvas = document.getElementById('risk-chart');
     const themeToggle = document.getElementById('theme-toggle');
+    const calculateBtn = document.getElementById('calculateBtn');
+    const spinner = calculateBtn.querySelector('.spinner-border');
     let chart = null;
+
+    // Form validation
+    function validateForm() {
+        const inputs = form.querySelectorAll('input[required], select[required]');
+        let isValid = true;
+
+        inputs.forEach(input => {
+            if (!input.value) {
+                isValid = false;
+                input.classList.add('is-invalid');
+            } else {
+                input.classList.remove('is-invalid');
+                input.classList.add('is-valid');
+            }
+
+            // Specific validation for risk percentage
+            if (input.id === 'riskPercentage') {
+                const value = parseFloat(input.value);
+                if (value < 0 || value > 100) {
+                    isValid = false;
+                    input.classList.add('is-invalid');
+                }
+            }
+        });
+
+        return isValid;
+    }
+
+    // Real-time validation
+    form.querySelectorAll('input, select').forEach(input => {
+        input.addEventListener('input', () => {
+            if (input.value) {
+                input.classList.remove('is-invalid');
+                input.classList.add('is-valid');
+            } else {
+                input.classList.remove('is-valid');
+                input.classList.add('is-invalid');
+            }
+        });
+    });
+
+    // Increment/Decrement buttons
+    document.querySelectorAll('[data-action]').forEach(button => {
+        button.addEventListener('click', () => {
+            const input = button.parentElement.querySelector('input');
+            const step = parseFloat(input.step) || 1;
+            const min = parseFloat(input.min);
+            const max = parseFloat(input.max);
+            let value = parseFloat(input.value) || 0;
+
+            if (button.dataset.action === 'increment') {
+                value = Math.min(value + step, max || Infinity);
+            } else {
+                value = Math.max(value - step, min || -Infinity);
+            }
+
+            input.value = value;
+            input.dispatchEvent(new Event('input'));
+        });
+    });
 
     // Theme toggle
     themeToggle.addEventListener('change', function() {
@@ -11,83 +73,100 @@ document.addEventListener('DOMContentLoaded', function() {
         updateChartTheme();
     });
 
-    // Initialize tooltips
-    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-    tooltipTriggerList.map(function (tooltipTriggerEl) {
-        return new bootstrap.Tooltip(tooltipTriggerEl);
-    });
-
     // Form submission
-    form.addEventListener('submit', function(e) {
+    form.addEventListener('submit', async function(e) {
         e.preventDefault();
-        const formData = new FormData(form);
-        const data = Object.fromEntries(formData.entries());
 
-        // Input validation
-        if (!validateInputs(data)) {
+        if (!validateForm()) {
             return;
         }
 
-        fetch('/calculate', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(data),
-        })
-        .then(response => response.json())
-        .then(result => {
+        // Show loading state
+        calculateBtn.disabled = true;
+        spinner.classList.remove('d-none');
+
+        const formData = new FormData(form);
+        const data = Object.fromEntries(formData.entries());
+
+        try {
+            const response = await fetch('/calculate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data),
+            });
+
+            if (!response.ok) {
+                throw new Error('Calculation failed');
+            }
+
+            const result = await response.json();
             displayResults(result);
             updateChart(result);
-        })
-        .catch(error => {
+        } catch (error) {
             console.error('Error:', error);
-            resultDiv.innerHTML = '<p class="text-danger">An error occurred. Please try again.</p>';
-        });
+            resultDiv.innerHTML = `
+                <div class="alert alert-danger" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    An error occurred. Please try again.
+                </div>
+            `;
+        } finally {
+            // Hide loading state
+            calculateBtn.disabled = false;
+            spinner.classList.add('d-none');
+        }
     });
 
-    function validateInputs(data) {
-        const fields = ['capitalTotal', 'riskPercentage', 'entryPrice', 'exitPrice'];
-        for (const field of fields) {
-            if (isNaN(parseFloat(data[field])) || parseFloat(data[field]) <= 0) {
-                resultDiv.innerHTML = `<p class="text-danger">Please enter a valid positive number for ${field.replace(/([A-Z])/g, ' $1').toLowerCase()}.</p>`;
-                return false;
-            }
-        }
-        if (parseFloat(data.riskPercentage) > 100) {
-            resultDiv.innerHTML = '<p class="text-danger">Risk percentage cannot be greater than 100%.</p>';
-            return false;
-        }
-        return true;
-    }
-
     function displayResults(result) {
+        const currencySymbol = getCurrencySymbol(form.baseCurrency.value);
         resultDiv.innerHTML = `
-            <div class="card">
-                <div class="card-header bg-primary text-white">
-                    <h2 class="card-title mb-0">Calculation Results</h2>
+            <div class="card shadow-lg border-0">
+                <div class="card-header bg-primary">
+                    <h2 class="card-title h4 mb-0 text-warning">Calculation Results</h2>
                 </div>
                 <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <h5 class="text-primary">Capital at Risk:</h5>
-                            <p class="lead">${formatNumber(result.capitalAtRisk)}</p>
-                            <small class="text-muted">The amount of capital you're risking on this trade.</small>
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-currency-exchange fs-4 text-warning me-2"></i>
+                                <div>
+                                    <h5 class="text-warning mb-1">Capital at Risk</h5>
+                                    <p class="h3 mb-1">${currencySymbol}${formatNumber(result.capitalAtRisk)}</p>
+                                    <small class="text-muted">Amount you're risking on this trade</small>
+                                </div>
+                            </div>
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <h5 class="text-primary">Risk per Unit:</h5>
-                            <p class="lead">${formatNumber(result.riskPerUnit)}</p>
-                            <small class="text-muted">The difference between your entry and exit prices.</small>
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-graph-up fs-4 text-warning me-2"></i>
+                                <div>
+                                    <h5 class="text-warning mb-1">Risk per Unit</h5>
+                                    <p class="h3 mb-1">${currencySymbol}${formatNumber(result.riskPerUnit)}</p>
+                                    <small class="text-muted">Price difference between entry and exit</small>
+                                </div>
+                            </div>
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <h5 class="text-primary">Position Size:</h5>
-                            <p class="lead">${formatNumber(result.positionSize)}</p>
-                            <small class="text-muted">The number of units you should trade based on your risk parameters.</small>
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-rulers fs-4 text-warning me-2"></i>
+                                <div>
+                                    <h5 class="text-warning mb-1">Position Size</h5>
+                                    <p class="h3 mb-1">${formatNumber(result.positionSize)} units</p>
+                                    <small class="text-muted">Number of units to trade</small>
+                                </div>
+                            </div>
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <h5 class="text-primary">Total Position Value:</h5>
-                            <p class="lead">${formatNumber(result.totalPositionValue)}</p>
-                            <small class="text-muted">The total value of your position at the entry price.</small>
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-cash-stack fs-4 text-warning me-2"></i>
+                                <div>
+                                    <h5 class="text-warning mb-1">Total Position Value</h5>
+                                    <p class="h3 mb-1">${currencySymbol}${formatNumber(result.totalPositionValue)}</p>
+                                    <small class="text-muted">Total value at entry price</small>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -104,18 +183,18 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         chart = new Chart(ctx, {
-            type: 'pie',
+            type: 'doughnut',
             data: {
                 labels: ['Capital at Risk', 'Remaining Capital'],
                 datasets: [{
                     data: [result.capitalAtRisk, remainingCapital],
                     backgroundColor: [
-                        'rgba(255, 99, 132, 0.8)',
-                        'rgba(54, 162, 235, 0.8)'
+                        'rgba(241, 196, 15, 0.8)',
+                        'rgba(52, 152, 219, 0.8)'
                     ],
                     borderColor: [
-                        'rgba(255, 99, 132, 1)',
-                        'rgba(54, 162, 235, 1)'
+                        'rgba(241, 196, 15, 1)',
+                        'rgba(52, 152, 219, 1)'
                     ],
                     borderWidth: 1
                 }]
@@ -125,28 +204,48 @@ document.addEventListener('DOMContentLoaded', function() {
                 plugins: {
                     legend: {
                         position: 'top',
+                        labels: {
+                            color: getComputedStyle(document.documentElement)
+                                .getPropertyValue('--bs-text-light')
+                        }
                     },
                     title: {
                         display: true,
-                        text: 'Capital Distribution'
+                        text: 'Capital Distribution',
+                        color: getComputedStyle(document.documentElement)
+                            .getPropertyValue('--bs-text-light')
                     }
                 }
             }
         });
-
-        updateChartTheme();
     }
 
     function updateChartTheme() {
         if (!chart) return;
 
-        const isDark = document.documentElement.classList.contains('dark');
-        chart.options.plugins.legend.labels.color = isDark ? '#fff' : '#666';
-        chart.options.plugins.title.color = isDark ? '#fff' : '#666';
+        const textColor = getComputedStyle(document.documentElement)
+            .getPropertyValue('--bs-text-light');
+
+        chart.options.plugins.legend.labels.color = textColor;
+        chart.options.plugins.title.color = textColor;
         chart.update();
     }
 
     function formatNumber(num) {
-        return new Intl.NumberFormat('en-US', { style: 'decimal', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num);
+        return new Intl.NumberFormat('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        }).format(num);
+    }
+
+    function getCurrencySymbol(currency) {
+        const symbols = {
+            'USD': '$',
+            'EUR': '€',
+            'GBP': '£',
+            'JPY': '¥',
+            'AUD': 'A$'
+        };
+        return symbols[currency] || currency;
     }
 });
