@@ -32,10 +32,10 @@
                                 <div class="col-md-6">
                                     <div class="form-floating">
                                         <input type="number" class="form-control" id="capitalTotal" name="capitalTotal" 
-                                               placeholder="Ingrese capital total" step="0.01" required>
+                                               placeholder="Ingrese capital total" step="0.01" min="0" required>
                                         <label for="capitalTotal">Capital Total</label>
                                         <div class="invalid-feedback">
-                                            Por favor ingrese un monto válido
+                                            Por favor ingrese un monto válido mayor que cero
                                         </div>
                                     </div>
                                 </div>
@@ -75,7 +75,7 @@
                                             </button>
                                         </div>
                                         <div class="invalid-feedback">
-                                            Por favor ingrese un porcentaje válido (0-100)
+                                            Por favor ingrese un porcentaje válido entre 0 y 100
                                         </div>
                                         <div class="mt-2 small">
                                             Capital en Riesgo: <span id="risk-display" class="text-warning">0.00</span>
@@ -86,10 +86,10 @@
                                 <div class="col-md-6">
                                     <div class="form-floating">
                                         <input type="number" class="form-control" id="entryPrice" name="entryPrice" 
-                                               placeholder="Ingrese precio de entrada" step="0.01" required>
+                                               placeholder="Ingrese precio de entrada" step="0.01" min="0" required>
                                         <label for="entryPrice">Precio de Entrada</label>
                                         <div class="invalid-feedback">
-                                            Por favor ingrese un precio de entrada válido
+                                            Por favor ingrese un precio de entrada válido mayor que cero
                                         </div>
                                     </div>
                                 </div>
@@ -97,10 +97,10 @@
                                 <div class="col-md-6">
                                     <div class="form-floating">
                                         <input type="number" class="form-control" id="exitPrice" name="exitPrice" 
-                                               placeholder="Ingrese precio de salida" step="0.01" required>
+                                               placeholder="Ingrese precio de salida" step="0.01" min="0" required>
                                         <label for="exitPrice">Precio de Stop Loss</label>
                                         <div class="invalid-feedback">
-                                            El precio de stop loss debe ser menor al precio de entrada
+                                            El precio de stop loss debe ser menor al precio de entrada y mayor que cero
                                         </div>
                                     </div>
                                 </div>
