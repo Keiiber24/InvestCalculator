@@ -23,10 +23,10 @@
                                 <div class="col-md-6">
                                     <div class="form-floating">
                                         <input type="number" class="form-control" id="capitalTotal" name="capitalTotal" 
-                                               placeholder="Enter capital total" step="0.01" min="0.01" required>
+                                               placeholder="Enter capital total" step="0.01" required>
                                         <label for="capitalTotal">Investment Capital</label>
                                         <div class="invalid-feedback">
-                                            Please enter a valid investment amount (min 0.01)
+                                            Please enter a valid investment amount
                                         </div>
                                     </div>
                                 </div>
@@ -58,7 +58,7 @@
                                                 <input type="number" class="form-control border-start-0 border-end-0" 
                                                        id="riskPercentage" name="riskPercentage" 
                                                        placeholder="Enter risk percentage" 
-                                                       step="0.1" min="0.1" max="100" required>
+                                                       step="0.1" min="0" max="100" required>
                                                 <label for="riskPercentage">Risk Percentage</label>
                                             </div>
                                             <button type="button" class="btn btn-financial" data-action="increment">
@@ -66,7 +66,7 @@
                                             </button>
                                         </div>
                                         <div class="invalid-feedback">
-                                            Please enter a valid percentage (0.1-100)
+                                            Please enter a valid percentage (0-100)
                                         </div>
                                     </div>
                                 </div>
@@ -74,10 +74,10 @@
                                 <div class="col-md-6">
                                     <div class="form-floating">
                                         <input type="number" class="form-control" id="entryPrice" name="entryPrice" 
-                                               placeholder="Enter entry price" step="0.0001" min="0.0001" required>
+                                               placeholder="Enter entry price" step="0.01" required>
                                         <label for="entryPrice">Purchase Price</label>
                                         <div class="invalid-feedback">
-                                            Please enter a valid purchase price (min 0.0001)
+                                            Please enter a valid purchase price
                                         </div>
                                     </div>
                                 </div>
@@ -85,10 +85,10 @@
                                 <div class="col-md-6">
                                     <div class="form-floating">
                                         <input type="number" class="form-control" id="exitPrice" name="exitPrice" 
-                                               placeholder="Enter exit price" step="0.0001" min="0.0001" required>
+                                               placeholder="Enter exit price" step="0.01" required>
                                         <label for="exitPrice">Stop Loss Price</label>
                                         <div class="invalid-feedback">
-                                            Please enter a valid stop loss price (min 0.0001)
+                                            Please enter a valid stop loss price
                                         </div>
                                     </div>
                                 </div>
