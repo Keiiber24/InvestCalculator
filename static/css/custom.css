@@ -1,0 +1,17 @@
+/* Custom styles */
+.dark .dark\:bg-gray-800 {
+    background-color: #1a202c;
+}
+
+.dark .dark\:text-white {
+    color: #fff;
+}
+
+.dark .dark\:text-gray-400 {
+    color: #cbd5e0;
+}
+
+/* Smooth transition for theme toggle */
+body {
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
