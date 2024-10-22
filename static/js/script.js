@@ -117,7 +117,7 @@ document.addEventListener('DOMContentLoaded', function() {
         resultDiv.innerHTML = `
             <div class="card shadow-lg border-0">
                 <div class="card-header bg-primary">
-                    <h2 class="card-title h4 mb-0 text-warning">Calculation Results</h2>
+                    <h2 class="card-title h4 mb-0 text-warning">Investment Results</h2>
                 </div>
                 <div class="card-body">
                     <div class="row g-4">
@@ -127,7 +127,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 <div>
                                     <h5 class="text-gradient mb-1">Capital at Risk</h5>
                                     <p class="h3 mb-1">${currencySymbol}${formatNumber(result.capitalAtRisk)}</p>
-                                    <small class="text-muted">Amount you're risking on this trade</small>
+                                    <small class="text-muted">Amount you're risking on this investment</small>
                                 </div>
                             </div>
                         </div>
@@ -137,7 +137,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 <div>
                                     <h5 class="text-gradient mb-1">Risk per Unit</h5>
                                     <p class="h3 mb-1">${currencySymbol}${formatNumber(result.riskPerUnit)}</p>
-                                    <small class="text-muted">Price difference between entry and exit</small>
+                                    <small class="text-muted">Price difference between purchase and stop loss</small>
                                 </div>
                             </div>
                         </div>
@@ -147,7 +147,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 <div>
                                     <h5 class="text-gradient mb-1">Position Size</h5>
                                     <p class="h3 mb-1">${formatNumber(result.positionSize)} units</p>
-                                    <small class="text-muted">Number of units to trade</small>
+                                    <small class="text-muted">Number of units to invest</small>
                                 </div>
                             </div>
                         </div>
@@ -155,9 +155,9 @@ document.addEventListener('DOMContentLoaded', function() {
                             <div class="d-flex align-items-center">
                                 <i class="bi bi-cash-stack fs-4 text-warning me-2"></i>
                                 <div>
-                                    <h5 class="text-gradient mb-1">Total Position Value</h5>
+                                    <h5 class="text-gradient mb-1">Total Investment Value</h5>
                                     <p class="h3 mb-1">${currencySymbol}${formatNumber(result.totalPositionValue)}</p>
-                                    <small class="text-muted">Total value at entry price</small>
+                                    <small class="text-muted">Total value at purchase price</small>
                                 </div>
                             </div>
                         </div>
@@ -178,7 +178,7 @@ document.addEventListener('DOMContentLoaded', function() {
         chart = new Chart(ctx, {
             type: 'doughnut',
             data: {
-                labels: ['Capital at Risk', 'Remaining Capital'],
+                labels: ['Capital at Risk', 'Available Capital'],
                 datasets: [{
                     data: [result.capitalAtRisk, remainingCapital],
                     backgroundColor: [
@@ -203,7 +203,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     },
                     title: {
                         display: true,
-                        text: 'Capital Distribution',
+                        text: 'Investment Capital Distribution',
                         color: 'var(--bs-text-light)'
                     }
                 }
