@@ -5,7 +5,48 @@ document.addEventListener('DOMContentLoaded', function() {
     const themeToggle = document.getElementById('theme-toggle');
     const calculateBtn = document.getElementById('calculateBtn');
     const spinner = calculateBtn.querySelector('.spinner-border');
+    const riskPercentageInput = document.getElementById('riskPercentage');
+    const entryPriceInput = document.getElementById('entryPrice');
+    const exitPriceInput = document.getElementById('exitPrice');
+    const capitalTotalInput = document.getElementById('capitalTotal');
     let chart = null;
+
+    // Real-time risk amount calculation
+    function updateRiskAmount() {
+        const capitalTotal = parseFloat(capitalTotalInput.value) || 0;
+        const riskPercentage = parseFloat(riskPercentageInput.value) || 0;
+        const riskAmount = capitalTotal * (riskPercentage / 100);
+        
+        const riskDisplay = document.getElementById('risk-display');
+        if (riskDisplay) {
+            riskDisplay.textContent = formatNumber(riskAmount);
+            
+            // Add warning for high risk
+            if (riskPercentage > 5) {
+                riskDisplay.classList.add('text-danger');
+                riskDisplay.classList.remove('text-warning');
+            } else {
+                riskDisplay.classList.remove('text-danger');
+                riskDisplay.classList.add('text-warning');
+            }
+        }
+    }
+
+    // Validate stop loss vs entry price
+    function validateStopLoss() {
+        const entryPrice = parseFloat(entryPriceInput.value) || 0;
+        const exitPrice = parseFloat(exitPriceInput.value) || 0;
+        
+        if (exitPrice >= entryPrice) {
+            exitPriceInput.classList.add('is-invalid');
+            exitPriceInput.classList.remove('is-valid');
+            return false;
+        } else {
+            exitPriceInput.classList.remove('is-invalid');
+            exitPriceInput.classList.add('is-valid');
+            return true;
+        }
+    }
 
     // Form validation
     function validateForm() {
@@ -28,10 +69,15 @@ document.addEventListener('DOMContentLoaded', function() {
                     isValid = false;
                     input.classList.add('is-invalid');
                 }
+                if (value > 5) {
+                    input.classList.add('text-danger');
+                } else {
+                    input.classList.remove('text-danger');
+                }
             }
         });
 
-        return isValid;
+        return isValid && validateStopLoss();
     }
 
     // Real-time validation
@@ -43,6 +89,14 @@ document.addEventListener('DOMContentLoaded', function() {
             } else {
                 input.classList.remove('is-valid');
                 input.classList.add('is-invalid');
+            }
+            
+            if (input.id === 'riskPercentage' || input.id === 'capitalTotal') {
+                updateRiskAmount();
+            }
+            
+            if (input.id === 'entryPrice' || input.id === 'exitPrice') {
+                validateStopLoss();
             }
         });
     });
@@ -109,7 +163,7 @@ document.addEventListener('DOMContentLoaded', function() {
             resultDiv.innerHTML = `
                 <div class="alert alert-danger" role="alert">
                     <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                    An error occurred. Please try again.
+                    Ha ocurrido un error. Por favor, intente nuevamente.
                 </div>
             `;
         } finally {
@@ -124,7 +178,7 @@ document.addEventListener('DOMContentLoaded', function() {
         resultDiv.innerHTML = `
             <div class="card shadow-lg border-0">
                 <div class="card-header bg-primary">
-                    <h2 class="card-title h4 mb-0 text-warning">Calculation Results</h2>
+                    <h2 class="card-title h4 mb-0 text-warning">Resultados del Cálculo</h2>
                 </div>
                 <div class="card-body">
                     <div class="row g-4">
@@ -132,9 +186,9 @@ document.addEventListener('DOMContentLoaded', function() {
                             <div class="d-flex align-items-center">
                                 <i class="bi bi-currency-exchange fs-4 text-warning me-2"></i>
                                 <div>
-                                    <h5 class="text-gradient mb-1">Capital at Risk</h5>
+                                    <h5 class="text-gradient mb-1">Capital de Riesgo</h5>
                                     <p class="h3 mb-1">${currencySymbol}${formatNumber(result.capitalAtRisk)}</p>
-                                    <small class="text-muted">Amount you're risking on this trade</small>
+                                    <small class="text-muted">Capital de Riesgo = ${formatNumber(parseFloat(form.capitalTotal.value))} × ${parseFloat(form.riskPercentage.value)}%</small>
                                 </div>
                             </div>
                         </div>
@@ -142,9 +196,9 @@ document.addEventListener('DOMContentLoaded', function() {
                             <div class="d-flex align-items-center">
                                 <i class="bi bi-graph-up fs-4 text-warning me-2"></i>
                                 <div>
-                                    <h5 class="text-gradient mb-1">Risk per Unit</h5>
+                                    <h5 class="text-gradient mb-1">Monto a Arriesgar por Unidad</h5>
                                     <p class="h3 mb-1">${currencySymbol}${formatNumber(result.riskPerUnit)}</p>
-                                    <small class="text-muted">Price difference between entry and exit</small>
+                                    <small class="text-muted">Precio de Entrada - Stop Loss = ${formatNumber(parseFloat(form.entryPrice.value))} - ${formatNumber(parseFloat(form.exitPrice.value))}</small>
                                 </div>
                             </div>
                         </div>
@@ -152,9 +206,9 @@ document.addEventListener('DOMContentLoaded', function() {
                             <div class="d-flex align-items-center">
                                 <i class="bi bi-rulers fs-4 text-warning me-2"></i>
                                 <div>
-                                    <h5 class="text-gradient mb-1">Position Size</h5>
-                                    <p class="h3 mb-1">${formatNumber(result.positionSize)} units</p>
-                                    <small class="text-muted">Number of units to trade</small>
+                                    <h5 class="text-gradient mb-1">Total Unidades</h5>
+                                    <p class="h3 mb-1">${formatNumber(result.positionSize)} unidades</p>
+                                    <small class="text-muted">Capital de Riesgo ÷ Monto a Arriesgar por Unidad</small>
                                 </div>
                             </div>
                         </div>
@@ -162,9 +216,9 @@ document.addEventListener('DOMContentLoaded', function() {
                             <div class="d-flex align-items-center">
                                 <i class="bi bi-cash-stack fs-4 text-warning me-2"></i>
                                 <div>
-                                    <h5 class="text-gradient mb-1">Total Position Value</h5>
+                                    <h5 class="text-gradient mb-1">Valor Total de la Posición</h5>
                                     <p class="h3 mb-1">${currencySymbol}${formatNumber(result.totalPositionValue)}</p>
-                                    <small class="text-muted">Total value at entry price</small>
+                                    <small class="text-muted">Total Unidades × Precio de Entrada</small>
                                 </div>
                             </div>
                         </div>
@@ -185,7 +239,7 @@ document.addEventListener('DOMContentLoaded', function() {
         chart = new Chart(ctx, {
             type: 'doughnut',
             data: {
-                labels: ['Capital at Risk', 'Remaining Capital'],
+                labels: ['Capital en Riesgo', 'Capital Restante'],
                 datasets: [{
                     data: [result.capitalAtRisk, remainingCapital],
                     backgroundColor: [
@@ -211,7 +265,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     },
                     title: {
                         display: true,
-                        text: 'Capital Distribution',
+                        text: 'Distribución del Capital',
                         color: getComputedStyle(document.documentElement)
                             .getPropertyValue('--bs-text-light')
                     }
@@ -232,7 +286,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function formatNumber(num) {
-        return new Intl.NumberFormat('en-US', {
+        return new Intl.NumberFormat('es-ES', {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2
         }).format(num);

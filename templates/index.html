@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en" data-bs-theme="dark">
+<html lang="es" data-bs-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trading Calculator</title>
+    <title>Calculadora de Trading</title>
     <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -15,12 +15,12 @@
         <div class="row justify-content-center">
             <div class="col-lg-10">
                 <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h1 class="display-4 fw-bold text-gradient">Trading Calculator</h1>
+                    <h1 class="display-4 fw-bold text-gradient">Calculadora de Trading</h1>
                     <div class="form-check form-switch">
                         <input class="form-check-input" type="checkbox" id="theme-toggle">
                         <label class="form-check-label" for="theme-toggle">
                             <i class="bi bi-moon-stars-fill"></i>
-                            Dark Mode
+                            Modo Oscuro
                         </label>
                     </div>
                 </div>
@@ -32,10 +32,10 @@
                                 <div class="col-md-6">
                                     <div class="form-floating">
                                         <input type="number" class="form-control" id="capitalTotal" name="capitalTotal" 
-                                               placeholder="Enter capital total" step="0.01" required>
+                                               placeholder="Ingrese capital total" step="0.01" required>
                                         <label for="capitalTotal">Capital Total</label>
                                         <div class="invalid-feedback">
-                                            Please enter a valid capital amount
+                                            Por favor ingrese un monto válido
                                         </div>
                                     </div>
                                 </div>
@@ -43,16 +43,16 @@
                                 <div class="col-md-6">
                                     <div class="form-floating">
                                         <select class="form-select" id="baseCurrency" name="baseCurrency" required>
-                                            <option value="">Select currency</option>
+                                            <option value="">Seleccione moneda</option>
                                             <option value="USD">🇺🇸 USD</option>
                                             <option value="EUR">🇪🇺 EUR</option>
                                             <option value="GBP">🇬🇧 GBP</option>
                                             <option value="JPY">🇯🇵 JPY</option>
                                             <option value="AUD">🇦🇺 AUD</option>
                                         </select>
-                                        <label for="baseCurrency">Base Currency</label>
+                                        <label for="baseCurrency">Moneda Base</label>
                                         <div class="invalid-feedback">
-                                            Please select a currency
+                                            Por favor seleccione una moneda
                                         </div>
                                     </div>
                                 </div>
@@ -66,16 +66,19 @@
                                             <div class="form-floating flex-grow-1">
                                                 <input type="number" class="form-control border-start-0 border-end-0" 
                                                        id="riskPercentage" name="riskPercentage" 
-                                                       placeholder="Enter risk percentage" 
+                                                       placeholder="Ingrese porcentaje de riesgo" 
                                                        step="0.1" min="0" max="100" required>
-                                                <label for="riskPercentage">Risk Percentage</label>
+                                                <label for="riskPercentage">Porcentaje de Riesgo</label>
                                             </div>
                                             <button type="button" class="btn btn-financial" data-action="increment">
                                                 <i class="bi bi-plus-lg"></i>
                                             </button>
                                         </div>
                                         <div class="invalid-feedback">
-                                            Please enter a valid percentage (0-100)
+                                            Por favor ingrese un porcentaje válido (0-100)
+                                        </div>
+                                        <div class="mt-2 small">
+                                            Capital en Riesgo: <span id="risk-display" class="text-warning">0.00</span>
                                         </div>
                                     </div>
                                 </div>
@@ -83,10 +86,10 @@
                                 <div class="col-md-6">
                                     <div class="form-floating">
                                         <input type="number" class="form-control" id="entryPrice" name="entryPrice" 
-                                               placeholder="Enter entry price" step="0.01" required>
-                                        <label for="entryPrice">Entry Price</label>
+                                               placeholder="Ingrese precio de entrada" step="0.01" required>
+                                        <label for="entryPrice">Precio de Entrada</label>
                                         <div class="invalid-feedback">
-                                            Please enter a valid entry price
+                                            Por favor ingrese un precio de entrada válido
                                         </div>
                                     </div>
                                 </div>
@@ -94,10 +97,10 @@
                                 <div class="col-md-6">
                                     <div class="form-floating">
                                         <input type="number" class="form-control" id="exitPrice" name="exitPrice" 
-                                               placeholder="Enter exit price" step="0.01" required>
-                                        <label for="exitPrice">Exit/Stop Loss Price</label>
+                                               placeholder="Ingrese precio de salida" step="0.01" required>
+                                        <label for="exitPrice">Precio de Stop Loss</label>
                                         <div class="invalid-feedback">
-                                            Please enter a valid exit price
+                                            El precio de stop loss debe ser menor al precio de entrada
                                         </div>
                                     </div>
                                 </div>
@@ -106,7 +109,7 @@
                             <div class="text-center mt-4">
                                 <button type="submit" class="btn btn-warning btn-lg px-5" id="calculateBtn">
                                     <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
-                                    Calculate
+                                    Calcular
                                 </button>
                             </div>
                         </form>
