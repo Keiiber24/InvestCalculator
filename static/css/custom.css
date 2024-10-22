@@ -1,58 +1,114 @@
 /* Custom styles */
-
 :root {
-    --bs-primary: #3498db;
-    --bs-primary-rgb: 52, 152, 219;
-    --bs-secondary-color: #6c757d;
+    --bs-primary: #1a2b3c;
+    --bs-secondary: #2c3e50;
+    --bs-warning: #f1c40f;
+    --bs-warning-hover: #f39c12;
+    --bs-text-light: #e2e8f0;
+    --bs-text-muted: rgba(255, 255, 255, 0.7);
 }
 
-/* Smooth transition for theme toggle */
 body {
-    transition: background-color 0.3s ease, color 0.3s ease;
+    background-color: var(--bs-primary);
+    color: var(--bs-text-light);
 }
 
-/* Custom styles for the form and result card */
-.card, #calculator-form {
-    background: linear-gradient(145deg, var(--bs-primary), #2980b9);
-    border: none;
+/* Form and card styles */
+#calculator-form {
+    background: linear-gradient(145deg, var(--bs-primary), var(--bs-secondary));
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+    padding: 2rem;
+}
+
+.card {
+    background: linear-gradient(145deg, var(--bs-primary), var(--bs-secondary));
+    border: 1px solid rgba(255, 255, 255, 0.1);
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
-#result .card-header {
-    background-color: rgba(var(--bs-primary-rgb), 0.8);
-    color: var(--bs-white);
-}
-
-#result .text-primary {
-    color: var(--bs-white) !important;
-}
-
-#result .text-muted {
-    color: rgba(255, 255, 255, 0.8) !important;
-}
-
-.form-label, .card-title {
-    color: var(--bs-white);
+/* Form elements */
+.form-label {
+    color: var(--bs-text-light);
+    font-weight: 500;
+    margin-bottom: 0.75rem;
+    font-size: 1.1rem;
+    letter-spacing: 0.5px;
 }
 
 .form-control {
-    background-color: rgba(255, 255, 255, 0.1);
-    border-color: rgba(255, 255, 255, 0.2);
-    color: var(--bs-white);
+    background-color: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--bs-text-light);
+    padding: 0.75rem 1rem;
 }
 
 .form-control:focus {
-    background-color: rgba(255, 255, 255, 0.2);
-    border-color: rgba(255, 255, 255, 0.3);
-    color: var(--bs-white);
+    background-color: rgba(255, 255, 255, 0.1);
+    border-color: var(--bs-warning);
+    box-shadow: 0 0 0 0.25rem rgba(241, 196, 15, 0.25);
+    color: var(--bs-text-light);
 }
 
-.btn-primary {
-    background-color: #2ecc71;
-    border-color: #27ae60;
+/* Custom warning button styling */
+.custom-warning {
+    background-color: var(--bs-warning) !important;
+    border-color: var(--bs-warning) !important;
+    color: var(--bs-primary) !important;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 1rem 2.5rem;
+    transition: all 0.3s ease;
 }
 
-.btn-primary:hover {
-    background-color: #27ae60;
-    border-color: #229954;
+.custom-warning:hover {
+    background-color: var(--bs-warning-hover) !important;
+    border-color: var(--bs-warning-hover) !important;
+    color: var(--bs-primary) !important;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Result card styling */
+#result .card-header {
+    background-color: rgba(26, 43, 60, 0.8);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--bs-text-light);
+    padding: 1.25rem;
+}
+
+#result .text-primary {
+    color: var(--bs-warning) !important;
+}
+
+#result .text-muted {
+    color: var(--bs-text-muted) !important;
+}
+
+/* Chart styling */
+#risk-chart {
+    background-color: rgba(255, 255, 255, 0.05);
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+}
+
+/* Dark mode toggle */
+.form-check-label {
+    color: var(--bs-text-light);
+    font-weight: 500;
+}
+
+.form-switch .form-check-input:checked {
+    background-color: var(--bs-warning);
+    border-color: var(--bs-warning);
+}
+
+/* Dark theme overrides */
+[data-bs-theme="dark"] {
+    --bs-body-color: var(--bs-text-light);
+}
+
+[data-bs-theme="dark"] .card {
+    background: linear-gradient(145deg, var(--bs-primary), var(--bs-secondary));
 }
