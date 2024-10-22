@@ -6,62 +6,120 @@ document.addEventListener('DOMContentLoaded', function() {
     const spinner = calculateBtn.querySelector('.spinner-border');
     let chart = null;
 
-    // Form validation
+    // Set appropriate step values and validation for decimal inputs
+    const decimalInputs = {
+        'capitalTotal': { step: '0.01', min: '0.01' },
+        'riskPercentage': { step: '0.1', min: '0.1', max: '100' },
+        'entryPrice': { step: '0.0001', min: '0.0001' },
+        'exitPrice': { step: '0.0001', min: '0.0001' }
+    };
+
+    // Configure decimal inputs
+    Object.entries(decimalInputs).forEach(([id, config]) => {
+        const input = document.getElementById(id);
+        if (input) {
+            Object.entries(config).forEach(([attr, value]) => {
+                input.setAttribute(attr, value);
+            });
+        }
+    });
+
+    // Form validation with decimal precision
     function validateForm() {
         const inputs = form.querySelectorAll('input[required], select[required]');
         let isValid = true;
 
         inputs.forEach(input => {
-            if (!input.value) {
+            const value = parseFloat(input.value);
+            const config = decimalInputs[input.id];
+
+            if (!input.value || isNaN(value)) {
                 isValid = false;
                 input.classList.add('is-invalid');
-            } else {
-                input.classList.remove('is-invalid');
-                input.classList.add('is-valid');
+                return;
             }
 
-            // Specific validation for risk percentage
-            if (input.id === 'riskPercentage') {
-                const value = parseFloat(input.value);
-                if (value < 0 || value > 100) {
+            if (config) {
+                const min = parseFloat(config.min);
+                const max = config.max ? parseFloat(config.max) : Infinity;
+                const step = parseFloat(config.step);
+
+                // Check if value respects step
+                const remainder = (value - min) % step;
+                const isStepValid = Math.abs(remainder) < Number.EPSILON || 
+                                  Math.abs(remainder - step) < Number.EPSILON;
+
+                if (value < min || value > max || !isStepValid) {
                     isValid = false;
                     input.classList.add('is-invalid');
+                    return;
                 }
             }
+
+            input.classList.remove('is-invalid');
+            input.classList.add('is-valid');
         });
 
         return isValid;
     }
 
-    // Real-time validation
-    form.querySelectorAll('input, select').forEach(input => {
-        input.addEventListener('input', () => {
-            if (input.value) {
-                input.classList.remove('is-invalid');
-                input.classList.add('is-valid');
-            } else {
+    // Real-time validation with decimal handling
+    form.querySelectorAll('input[type="number"]').forEach(input => {
+        input.addEventListener('input', (e) => {
+            const value = parseFloat(e.target.value);
+            const config = decimalInputs[input.id];
+
+            if (!e.target.value || isNaN(value)) {
                 input.classList.remove('is-valid');
                 input.classList.add('is-invalid');
+                return;
             }
+
+            if (config) {
+                const min = parseFloat(config.min);
+                const max = config.max ? parseFloat(config.max) : Infinity;
+                if (value < min || value > max) {
+                    input.classList.remove('is-valid');
+                    input.classList.add('is-invalid');
+                    return;
+                }
+            }
+
+            input.classList.remove('is-invalid');
+            input.classList.add('is-valid');
+        });
+
+        // Handle paste events
+        input.addEventListener('paste', (e) => {
+            setTimeout(() => {
+                const value = input.value.replace(/[^\d.-]/g, '');
+                input.value = value;
+                input.dispatchEvent(new Event('input'));
+            }, 0);
         });
     });
 
-    // Increment/Decrement buttons
+    // Increment/Decrement buttons with decimal precision
     document.querySelectorAll('[data-action]').forEach(button => {
         button.addEventListener('click', () => {
             const input = button.parentElement.querySelector('input');
-            const step = parseFloat(input.step) || 1;
-            const min = parseFloat(input.min);
-            const max = parseFloat(input.max);
+            const config = decimalInputs[input.id];
+            if (!config) return;
+
+            const step = parseFloat(config.step);
+            const min = parseFloat(config.min);
+            const max = config.max ? parseFloat(config.max) : Infinity;
             let value = parseFloat(input.value) || 0;
 
             if (button.dataset.action === 'increment') {
-                value = Math.min(value + step, max || Infinity);
+                value = Math.min(value + step, max);
             } else {
-                value = Math.max(value - step, min || -Infinity);
+                value = Math.max(value - step, min);
             }
 
-            input.value = value;
+            // Format to maintain proper decimal places
+            const decimals = config.step.split('.')[1]?.length || 0;
+            input.value = value.toFixed(decimals);
             input.dispatchEvent(new Event('input'));
         });
     });
@@ -80,6 +138,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const formData = new FormData(form);
         const data = Object.fromEntries(formData.entries());
+
+        // Ensure numeric values are properly formatted
+        Object.keys(decimalInputs).forEach(key => {
+            if (data[key]) {
+                data[key] = parseFloat(data[key]);
+            }
+        });
 
         try {
             const response = await fetch('/calculate', {
@@ -146,7 +211,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 <i class="bi bi-rulers fs-4 text-warning me-2"></i>
                                 <div>
                                     <h5 class="text-gradient mb-1">Position Size</h5>
-                                    <p class="h3 mb-1">${formatNumber(result.positionSize)} units</p>
+                                    <p class="h3 mb-1">${formatNumber(result.positionSize, 4)} units</p>
                                     <small class="text-muted">Number of units to invest</small>
                                 </div>
                             </div>
@@ -211,10 +276,10 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    function formatNumber(num) {
+    function formatNumber(num, decimals = 2) {
         return new Intl.NumberFormat('en-US', {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2
+            minimumFractionDigits: decimals,
+            maximumFractionDigits: decimals
         }).format(num);
     }
 
