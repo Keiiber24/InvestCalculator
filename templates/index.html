@@ -29,7 +29,6 @@
                     <div class="card-body p-4">
                         <form id="calculator-form" class="needs-validation" novalidate>
                             <div class="row g-4">
-                                <!-- Capital Total Input -->
                                 <div class="col-md-6">
                                     <div class="form-floating">
                                         <input type="number" class="form-control" id="capitalTotal" name="capitalTotal" 
@@ -41,7 +40,6 @@
                                     </div>
                                 </div>
 
-                                <!-- Currency Selector -->
                                 <div class="col-md-6">
                                     <div class="form-floating">
                                         <select class="form-select" id="baseCurrency" name="baseCurrency" required>
@@ -59,19 +57,22 @@
                                     </div>
                                 </div>
 
-                                <!-- Risk Percentage Input -->
                                 <div class="col-md-6">
-                                    <div class="form-floating">
+                                    <div class="form-floating input-group-floating">
                                         <div class="input-group">
-                                            <button type="button" class="btn btn-outline-secondary" data-action="decrement">
-                                                <i class="bi bi-dash"></i>
+                                            <button type="button" class="btn btn-financial" data-action="decrement">
+                                                <i class="bi bi-dash-lg"></i>
                                             </button>
-                                            <input type="number" class="form-control" id="riskPercentage" name="riskPercentage" 
-                                                   placeholder="Enter risk percentage" step="0.1" min="0" max="100" required>
-                                            <button type="button" class="btn btn-outline-secondary" data-action="increment">
-                                                <i class="bi bi-plus"></i>
+                                            <div class="form-floating flex-grow-1">
+                                                <input type="number" class="form-control border-start-0 border-end-0" 
+                                                       id="riskPercentage" name="riskPercentage" 
+                                                       placeholder="Enter risk percentage" 
+                                                       step="0.1" min="0" max="100" required>
+                                                <label for="riskPercentage">Risk Percentage</label>
+                                            </div>
+                                            <button type="button" class="btn btn-financial" data-action="increment">
+                                                <i class="bi bi-plus-lg"></i>
                                             </button>
-                                            <label for="riskPercentage">Risk Percentage</label>
                                         </div>
                                         <div class="invalid-feedback">
                                             Please enter a valid percentage (0-100)
@@ -79,7 +80,6 @@
                                     </div>
                                 </div>
 
-                                <!-- Entry Price Input -->
                                 <div class="col-md-6">
                                     <div class="form-floating">
                                         <input type="number" class="form-control" id="entryPrice" name="entryPrice" 
@@ -91,7 +91,6 @@
                                     </div>
                                 </div>
 
-                                <!-- Exit Price Input -->
                                 <div class="col-md-6">
                                     <div class="form-floating">
                                         <input type="number" class="form-control" id="exitPrice" name="exitPrice" 

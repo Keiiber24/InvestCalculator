@@ -60,7 +60,16 @@ body {
 
 .form-floating > label {
     padding: 1rem 0.75rem;
-    color: var(--bs-text-muted);
+    color: var(--bs-text-light);
+    opacity: 0.8;
+    font-weight: 500;
+    transition: opacity var(--transition-speed);
+}
+
+.form-floating > .form-control:focus ~ label,
+.form-floating > .form-select:focus ~ label {
+    opacity: 1;
+    color: var(--bs-warning);
 }
 
 .form-control:focus,
@@ -70,15 +79,75 @@ body {
     box-shadow: 0 0 0 0.25rem rgba(241, 196, 15, 0.25);
 }
 
-/* Input Group Styling */
-.input-group .btn {
-    z-index: 0;
+/* Input Group with Floating Label */
+.input-group-floating {
+    position: relative;
+    height: calc(3.5rem + 2px);
 }
 
-.input-group .btn:hover {
-    background-color: var(--bs-warning);
+.input-group-floating .input-group {
+    height: 100%;
+    background-color: rgba(255, 255, 255, 0.05);
+    border-radius: 0.375rem;
+    transition: all var(--transition-speed);
+}
+
+.input-group-floating .form-floating {
+    flex: 1;
+    height: 100%;
+}
+
+.input-group-floating .form-control {
+    height: 100%;
+    background-color: transparent;
+    border: none;
+    color: var(--bs-text-light);
+}
+
+.input-group-floating .form-floating > label {
+    padding: 1rem 0.75rem;
+    color: var(--bs-text-light);
+    opacity: 0.8;
+    z-index: 5;
+}
+
+.input-group-floating .form-floating > .form-control:focus ~ label {
+    opacity: 1;
+    color: var(--bs-warning);
+}
+
+/* Financial Theme Buttons */
+.btn-financial {
+    background: linear-gradient(135deg, rgba(241, 196, 15, 0.1), rgba(241, 196, 15, 0.2));
+    border: 1px solid rgba(241, 196, 15, 0.3);
+    color: var(--bs-warning);
+    width: 3rem;
+    padding: 0;
+    transition: all var(--transition-speed);
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-financial:hover,
+.btn-financial:focus,
+.btn-financial:active {
+    background: var(--bs-warning);
     border-color: var(--bs-warning);
     color: var(--bs-primary);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(241, 196, 15, 0.2);
+}
+
+.btn-financial:first-child {
+    border-top-left-radius: 0.375rem;
+    border-bottom-left-radius: 0.375rem;
+}
+
+.btn-financial:last-child {
+    border-top-right-radius: 0.375rem;
+    border-bottom-right-radius: 0.375rem;
 }
 
 /* Button Styles */
@@ -87,7 +156,7 @@ body {
 }
 
 .btn-warning {
-    background-color: var(--bs-warning);
+    background: linear-gradient(135deg, var(--bs-warning), var(--bs-warning-hover));
     border-color: var(--bs-warning);
     color: var(--bs-primary);
     font-weight: 600;
@@ -96,7 +165,7 @@ body {
 }
 
 .btn-warning:hover {
-    background-color: var(--bs-warning-hover);
+    background: linear-gradient(135deg, var(--bs-warning-hover), var(--bs-warning));
     border-color: var(--bs-warning-hover);
     transform: translateY(-2px);
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
@@ -159,4 +228,12 @@ body {
 
 #result > * {
     animation: fadeIn 0.5s ease-out;
+}
+
+/* Currency Selector Icons */
+.form-select option {
+    padding-left: 25px;
+    background-repeat: no-repeat;
+    background-position: 5px center;
+    background-size: 16px;
 }

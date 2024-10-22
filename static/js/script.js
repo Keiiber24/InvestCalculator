@@ -132,7 +132,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             <div class="d-flex align-items-center">
                                 <i class="bi bi-currency-exchange fs-4 text-warning me-2"></i>
                                 <div>
-                                    <h5 class="text-warning mb-1">Capital at Risk</h5>
+                                    <h5 class="text-gradient mb-1">Capital at Risk</h5>
                                     <p class="h3 mb-1">${currencySymbol}${formatNumber(result.capitalAtRisk)}</p>
                                     <small class="text-muted">Amount you're risking on this trade</small>
                                 </div>
@@ -142,7 +142,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             <div class="d-flex align-items-center">
                                 <i class="bi bi-graph-up fs-4 text-warning me-2"></i>
                                 <div>
-                                    <h5 class="text-warning mb-1">Risk per Unit</h5>
+                                    <h5 class="text-gradient mb-1">Risk per Unit</h5>
                                     <p class="h3 mb-1">${currencySymbol}${formatNumber(result.riskPerUnit)}</p>
                                     <small class="text-muted">Price difference between entry and exit</small>
                                 </div>
@@ -152,7 +152,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             <div class="d-flex align-items-center">
                                 <i class="bi bi-rulers fs-4 text-warning me-2"></i>
                                 <div>
-                                    <h5 class="text-warning mb-1">Position Size</h5>
+                                    <h5 class="text-gradient mb-1">Position Size</h5>
                                     <p class="h3 mb-1">${formatNumber(result.positionSize)} units</p>
                                     <small class="text-muted">Number of units to trade</small>
                                 </div>
@@ -162,7 +162,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             <div class="d-flex align-items-center">
                                 <i class="bi bi-cash-stack fs-4 text-warning me-2"></i>
                                 <div>
-                                    <h5 class="text-warning mb-1">Total Position Value</h5>
+                                    <h5 class="text-gradient mb-1">Total Position Value</h5>
                                     <p class="h3 mb-1">${currencySymbol}${formatNumber(result.totalPositionValue)}</p>
                                     <small class="text-muted">Total value at entry price</small>
                                 </div>
