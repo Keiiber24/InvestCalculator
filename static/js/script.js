@@ -42,7 +42,7 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .catch(error => {
             console.error('Error:', error);
-            resultDiv.innerHTML = '<p class="text-red-500">An error occurred. Please try again.</p>';
+            resultDiv.innerHTML = '<p class="text-danger">An error occurred. Please try again.</p>';
         });
     });
 
@@ -50,12 +50,12 @@ document.addEventListener('DOMContentLoaded', function() {
         const fields = ['capitalTotal', 'riskPercentage', 'entryPrice', 'exitPrice'];
         for (const field of fields) {
             if (isNaN(parseFloat(data[field])) || parseFloat(data[field]) <= 0) {
-                resultDiv.innerHTML = `<p class="text-red-500">Please enter a valid positive number for ${field.replace(/([A-Z])/g, ' $1').toLowerCase()}.</p>`;
+                resultDiv.innerHTML = `<p class="text-danger">Please enter a valid positive number for ${field.replace(/([A-Z])/g, ' $1').toLowerCase()}.</p>`;
                 return false;
             }
         }
         if (parseFloat(data.riskPercentage) > 100) {
-            resultDiv.innerHTML = '<p class="text-red-500">Risk percentage cannot be greater than 100%.</p>';
+            resultDiv.innerHTML = '<p class="text-danger">Risk percentage cannot be greater than 100%.</p>';
             return false;
         }
         return true;
@@ -63,23 +63,33 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function displayResults(result) {
         resultDiv.innerHTML = `
-            <h2 class="text-xl font-bold mb-4">Calculation Results</h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <p><strong>Capital at Risk:</strong> ${formatNumber(result.capitalAtRisk)}</p>
-                    <p class="text-sm text-gray-600 dark:text-gray-400">The amount of capital you're risking on this trade.</p>
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h2 class="card-title mb-0">Calculation Results</h2>
                 </div>
-                <div>
-                    <p><strong>Risk per Unit:</strong> ${formatNumber(result.riskPerUnit)}</p>
-                    <p class="text-sm text-gray-600 dark:text-gray-400">The difference between your entry and exit prices.</p>
-                </div>
-                <div>
-                    <p><strong>Position Size:</strong> ${formatNumber(result.positionSize)}</p>
-                    <p class="text-sm text-gray-600 dark:text-gray-400">The number of units you should trade based on your risk parameters.</p>
-                </div>
-                <div>
-                    <p><strong>Total Position Value:</strong> ${formatNumber(result.totalPositionValue)}</p>
-                    <p class="text-sm text-gray-600 dark:text-gray-400">The total value of your position at the entry price.</p>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <h5 class="text-primary">Capital at Risk:</h5>
+                            <p class="lead">${formatNumber(result.capitalAtRisk)}</p>
+                            <small class="text-muted">The amount of capital you're risking on this trade.</small>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <h5 class="text-primary">Risk per Unit:</h5>
+                            <p class="lead">${formatNumber(result.riskPerUnit)}</p>
+                            <small class="text-muted">The difference between your entry and exit prices.</small>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <h5 class="text-primary">Position Size:</h5>
+                            <p class="lead">${formatNumber(result.positionSize)}</p>
+                            <small class="text-muted">The number of units you should trade based on your risk parameters.</small>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <h5 class="text-primary">Total Position Value:</h5>
+                            <p class="lead">${formatNumber(result.totalPositionValue)}</p>
+                            <small class="text-muted">The total value of your position at the entry price.</small>
+                        </div>
+                    </div>
                 </div>
             </div>
         `;

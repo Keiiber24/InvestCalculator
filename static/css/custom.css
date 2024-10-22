@@ -1,17 +1,24 @@
 /* Custom styles */
-.dark .dark\:bg-gray-800 {
-    background-color: #1a202c;
-}
-
-.dark .dark\:text-white {
-    color: #fff;
-}
-
-.dark .dark\:text-gray-400 {
-    color: #cbd5e0;
-}
 
 /* Smooth transition for theme toggle */
 body {
     transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Custom styles for the result card */
+#result .card {
+    border: 1px solid var(--bs-border-color);
+}
+
+#result .card-header {
+    background-color: var(--bs-primary);
+    color: var(--bs-white);
+}
+
+#result .text-primary {
+    color: var(--bs-primary) !important;
+}
+
+#result .text-muted {
+    color: var(--bs-secondary-color) !important;
 }
