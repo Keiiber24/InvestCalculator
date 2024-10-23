@@ -1,10 +1,8 @@
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('calculator-form');
     const resultDiv = document.getElementById('result');
-    const chartCanvas = document.getElementById('risk-chart');
     const calculateBtn = document.getElementById('calculateBtn');
     const spinner = calculateBtn.querySelector('.spinner-border');
-    let chart = null;
 
     // Form validation
     function validateForm() {
@@ -96,7 +94,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
             const result = await response.json();
             displayResults(result);
-            updateChart(result);
         } catch (error) {
             console.error('Error:', error);
             resultDiv.innerHTML = `
@@ -165,50 +162,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
             </div>
         `;
-    }
-
-    function updateChart(result) {
-        const ctx = chartCanvas.getContext('2d');
-        const remainingCapital = parseFloat(form.capitalTotal.value) - result.capitalAtRisk;
-
-        if (chart) {
-            chart.destroy();
-        }
-
-        chart = new Chart(ctx, {
-            type: 'doughnut',
-            data: {
-                labels: ['Capital at Risk', 'Available Capital'],
-                datasets: [{
-                    data: [result.capitalAtRisk, remainingCapital],
-                    backgroundColor: [
-                        'rgba(241, 196, 15, 0.8)',  // Warning color (gold)
-                        'rgba(52, 152, 219, 0.8)'   // Info color (blue)
-                    ],
-                    borderColor: [
-                        'rgba(241, 196, 15, 1)',
-                        'rgba(52, 152, 219, 1)'
-                    ],
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: {
-                        position: 'top',
-                        labels: {
-                            color: 'var(--bs-text-light)'
-                        }
-                    },
-                    title: {
-                        display: true,
-                        text: 'Investment Capital Distribution',
-                        color: 'var(--bs-text-light)'
-                    }
-                }
-            }
-        });
     }
 
     function formatNumber(num) {
