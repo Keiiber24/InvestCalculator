@@ -42,18 +42,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 input.classList.add('is-invalid');
             }
         });
-
-        // Add real-time number formatting for numeric inputs
-        if (input.type === 'number') {
-            input.addEventListener('blur', () => {
-                if (input.value) {
-                    const value = parseFloat(input.value);
-                    if (!isNaN(value)) {
-                        input.value = formatInputNumber(value);
-                    }
-                }
-            });
-        }
     });
 
     // Increment/Decrement buttons
@@ -71,7 +59,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 value = Math.max(value - step, min || -Infinity);
             }
 
-            input.value = formatInputNumber(value);
+            input.value = value;
             input.dispatchEvent(new Event('input'));
         });
     });
@@ -89,12 +77,7 @@ document.addEventListener('DOMContentLoaded', function() {
         spinner.classList.remove('d-none');
 
         const formData = new FormData(form);
-        const data = {};
-        
-        // Parse numeric values before sending
-        for (let [key, value] of formData.entries()) {
-            data[key] = parseFloat(value.replace(/,/g, ''));
-        }
+        const data = Object.fromEntries(formData.entries());
 
         try {
             const response = await fetch('/calculate', {
@@ -139,7 +122,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 <i class="bi bi-currency-exchange fs-4 text-warning me-2"></i>
                                 <div>
                                     <h5 class="text-gradient mb-1">Capital at Risk</h5>
-                                    <p class="h3 mb-1">$${formatNumber(result.capitalAtRisk)}</p>
+                                    <p class="h3 mb-1">${formatNumber(result.capitalAtRisk)}</p>
                                     <small class="text-muted">Amount you're risking on this investment</small>
                                 </div>
                             </div>
@@ -149,7 +132,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 <i class="bi bi-graph-up fs-4 text-warning me-2"></i>
                                 <div>
                                     <h5 class="text-gradient mb-1">Risk per Unit</h5>
-                                    <p class="h3 mb-1">$${formatNumber(result.riskPerUnit)}</p>
+                                    <p class="h3 mb-1">${formatNumber(result.riskPerUnit)}</p>
                                     <small class="text-muted">Price difference between purchase and stop loss</small>
                                 </div>
                             </div>
@@ -169,7 +152,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 <i class="bi bi-cash-stack fs-4 text-warning me-2"></i>
                                 <div>
                                     <h5 class="text-gradient mb-1">Total Investment Value</h5>
-                                    <p class="h3 mb-1">$${formatNumber(result.totalPositionValue)}</p>
+                                    <p class="h3 mb-1">${formatNumber(result.totalPositionValue)}</p>
                                     <small class="text-muted">Total value at purchase price</small>
                                 </div>
                             </div>
@@ -180,21 +163,10 @@ document.addEventListener('DOMContentLoaded', function() {
         `;
     }
 
-    // Format numbers for display with proper separators and decimals
     function formatNumber(num) {
         return new Intl.NumberFormat('en-US', {
             minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-            useGrouping: true
-        }).format(num);
-    }
-
-    // Format numbers for input fields (less strict formatting)
-    function formatInputNumber(num) {
-        return new Intl.NumberFormat('en-US', {
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 2,
-            useGrouping: true
+            maximumFractionDigits: 2
         }).format(num);
     }
 });
