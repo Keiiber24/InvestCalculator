@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Form validation
     function validateForm() {
-        const inputs = form.querySelectorAll('input[required], select[required]');
+        const inputs = form.querySelectorAll('input[required]');
         let isValid = true;
 
         inputs.forEach(input => {
@@ -32,7 +32,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Real-time validation
-    form.querySelectorAll('input, select').forEach(input => {
+    form.querySelectorAll('input').forEach(input => {
         input.addEventListener('input', () => {
             if (input.value) {
                 input.classList.remove('is-invalid');
@@ -110,7 +110,6 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     function displayResults(result) {
-        const currencySymbol = getCurrencySymbol(form.baseCurrency.value);
         resultDiv.innerHTML = `
             <div class="card shadow-lg border-0">
                 <div class="card-header bg-primary">
@@ -123,7 +122,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 <i class="bi bi-currency-exchange fs-4 text-warning me-2"></i>
                                 <div>
                                     <h5 class="text-gradient mb-1">Capital at Risk</h5>
-                                    <p class="h3 mb-1">${currencySymbol}${formatNumber(result.capitalAtRisk)}</p>
+                                    <p class="h3 mb-1">${formatNumber(result.capitalAtRisk)}</p>
                                     <small class="text-muted">Amount you're risking on this investment</small>
                                 </div>
                             </div>
@@ -133,7 +132,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 <i class="bi bi-graph-up fs-4 text-warning me-2"></i>
                                 <div>
                                     <h5 class="text-gradient mb-1">Risk per Unit</h5>
-                                    <p class="h3 mb-1">${currencySymbol}${formatNumber(result.riskPerUnit)}</p>
+                                    <p class="h3 mb-1">${formatNumber(result.riskPerUnit)}</p>
                                     <small class="text-muted">Price difference between purchase and stop loss</small>
                                 </div>
                             </div>
@@ -153,7 +152,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 <i class="bi bi-cash-stack fs-4 text-warning me-2"></i>
                                 <div>
                                     <h5 class="text-gradient mb-1">Total Investment Value</h5>
-                                    <p class="h3 mb-1">${currencySymbol}${formatNumber(result.totalPositionValue)}</p>
+                                    <p class="h3 mb-1">${formatNumber(result.totalPositionValue)}</p>
                                     <small class="text-muted">Total value at purchase price</small>
                                 </div>
                             </div>
@@ -169,16 +168,5 @@ document.addEventListener('DOMContentLoaded', function() {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2
         }).format(num);
-    }
-
-    function getCurrencySymbol(currency) {
-        const symbols = {
-            'USD': '$',
-            'EUR': '€',
-            'GBP': '£',
-            'JPY': '¥',
-            'AUD': 'A$'
-        };
-        return symbols[currency] || currency;
     }
 });

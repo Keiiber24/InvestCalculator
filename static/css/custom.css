@@ -204,11 +204,3 @@ body {
 #result > * {
     animation: fadeIn 0.5s ease-out;
 }
-
-/* Currency Selector Icons */
-.form-select option {
-    padding-left: 25px;
-    background-repeat: no-repeat;
-    background-position: 5px center;
-    background-size: 16px;
-}
