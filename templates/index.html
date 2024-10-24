@@ -11,10 +11,18 @@
 </head>
 <body>
     <div class="container py-4">
+        <nav class="navbar navbar-expand-lg mb-4">
+            <div class="container-fluid">
+                <span class="navbar-brand mb-0 h1 text-gradient">Investment Calculator</span>
+                <div class="navbar-nav">
+                    <a class="nav-link active" href="/">Calculator</a>
+                    <a class="nav-link" href="/trades">Trades</a>
+                </div>
+            </div>
+        </nav>
+
         <div class="row justify-content-center">
             <div class="col-lg-10">
-                <h1 class="display-4 fw-bold text-gradient mb-4">Investment Calculator</h1>
-
                 <div class="card shadow-lg border-0 mb-4">
                     <div class="card-body p-4">
                         <form id="calculator-form" class="needs-validation" novalidate>
@@ -102,7 +110,7 @@
 
                             <div class="text-center mt-4">
                                 <button type="submit" class="btn btn-warning btn-lg px-5" id="calculateBtn">
-                                    <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                                    <span class="spinner-border spinner-border-sm d-none" role="status"></span>
                                     Calculate
                                 </button>
                             </div>

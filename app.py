@@ -1,12 +1,20 @@
 from flask import Flask, render_template, request, jsonify
 import os
+from financial_calculator import TradeCalculator
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY") or "a secret key"
 
+# Initialize the trade calculator
+trade_calculator = TradeCalculator()
+
 @app.route('/')
 def index():
     return render_template('index.html')
+
+@app.route('/trades')
+def trades():
+    return render_template('trades.html', trades=trade_calculator.trades)
 
 @app.route('/calculate', methods=['POST'])
 def calculate():
@@ -27,6 +35,18 @@ def calculate():
         'positionSize': round(position_size, 2),
         'totalPositionValue': round(total_position_value, 2)
     })
+
+@app.route('/add_trade', methods=['POST'])
+def add_trade():
+    data = request.json
+    trade_calculator.add_trade(
+        market=data['market'],
+        entry_price=float(data['entryPrice']),
+        units=float(data['units']),
+        exit_price=float(data['exitPrice']) if data.get('exitPrice') else None,
+        status=data['status']
+    )
+    return jsonify({'trades': trade_calculator.trades.to_dict('records')})
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)

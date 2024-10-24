@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trade Registration - Investment Calculator</title>
+    <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/custom.css') }}">
+</head>
+<body>
+    <div class="container py-4">
+        <nav class="navbar navbar-expand-lg mb-4">
+            <div class="container-fluid">
+                <span class="navbar-brand mb-0 h1 text-gradient">Investment Calculator</span>
+                <div class="navbar-nav">
+                    <a class="nav-link" href="/">Calculator</a>
+                    <a class="nav-link active" href="/trades">Trades</a>
+                </div>
+            </div>
+        </nav>
+
+        <div class="row justify-content-center">
+            <div class="col-12">
+                <div class="card shadow-lg border-0 mb-4">
+                    <div class="card-header bg-primary">
+                        <h2 class="card-title h4 mb-0 text-yellow">Add New Trade</h2>
+                    </div>
+                    <div class="card-body">
+                        <form id="trade-form" class="needs-validation" novalidate>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <div class="form-floating">
+                                        <input type="text" class="form-control" id="market" name="market" required>
+                                        <label for="market">Market Symbol</label>
+                                        <div class="invalid-feedback">
+                                            Please enter a market symbol
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <div class="form-floating">
+                                        <select class="form-select" id="status" name="status" required>
+                                            <option value="">Select status</option>
+                                            <option value="Open">Open</option>
+                                            <option value="Closed">Closed</option>
+                                        </select>
+                                        <label for="status">Trade Status</label>
+                                        <div class="invalid-feedback">
+                                            Please select a status
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-4">
+                                    <div class="form-floating">
+                                        <input type="text" class="form-control number-input" id="entryPrice" name="entryPrice" required>
+                                        <label for="entryPrice">Entry Price</label>
+                                        <div class="invalid-feedback">
+                                            Please enter a valid entry price
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-4">
+                                    <div class="form-floating">
+                                        <input type="text" class="form-control number-input" id="exitPrice" name="exitPrice">
+                                        <label for="exitPrice">Exit Price (optional)</label>
+                                        <div class="invalid-feedback">
+                                            Please enter a valid exit price
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-4">
+                                    <div class="form-floating">
+                                        <input type="text" class="form-control number-input" id="units" name="units" required>
+                                        <label for="units">Units</label>
+                                        <div class="invalid-feedback">
+                                            Please enter a valid number of units
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="text-center mt-4">
+                                <button type="submit" class="btn btn-warning btn-lg px-5">
+                                    <span class="spinner-border spinner-border-sm d-none" role="status"></span>
+                                    Add Trade
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="card shadow-lg border-0">
+                    <div class="card-header bg-primary d-flex justify-content-between align-items-center">
+                        <h2 class="card-title h4 mb-0 text-yellow">Trade History</h2>
+                        <div class="input-group w-auto">
+                            <input type="text" class="form-control" id="tradeFilter" placeholder="Filter trades...">
+                            <button class="btn btn-outline-warning" type="button" id="clearFilter">
+                                <i class="bi bi-x-lg"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0" id="tradesTable">
+                                <thead>
+                                    <tr>
+                                        <th class="sortable" data-sort="Date">Date <i class="bi bi-arrow-down-up"></i></th>
+                                        <th class="sortable" data-sort="Market">Market <i class="bi bi-arrow-down-up"></i></th>
+                                        <th class="sortable" data-sort="Status">Status <i class="bi bi-arrow-down-up"></i></th>
+                                        <th class="sortable" data-sort="Entry Price">Entry Price <i class="bi bi-arrow-down-up"></i></th>
+                                        <th class="sortable" data-sort="Exit Price">Exit Price <i class="bi bi-arrow-down-up"></i></th>
+                                        <th class="sortable" data-sort="Units">Units <i class="bi bi-arrow-down-up"></i></th>
+                                        <th class="sortable" data-sort="Position Size">Position Size <i class="bi bi-arrow-down-up"></i></th>
+                                        <th class="sortable" data-sort="Profit/Loss">P/L <i class="bi bi-arrow-down-up"></i></th>
+                                        <th class="sortable" data-sort="Win/Loss %">% <i class="bi bi-arrow-down-up"></i></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tradesTableBody">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/trades.js') }}"></script>
+</body>
+</html>
