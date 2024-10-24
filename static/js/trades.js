@@ -61,72 +61,104 @@ document.addEventListener('DOMContentLoaded', function() {
                 e.preventDefault();
             }
         });
+
+        // Add blur event for final validation
+        input.addEventListener('blur', () => {
+            validateInput(input);
+        });
+    });
+
+    // Status change handler
+    const statusSelect = document.getElementById('status');
+    const exitPriceInput = document.getElementById('exitPrice');
+    
+    statusSelect.addEventListener('change', () => {
+        const isClosedTrade = statusSelect.value === 'Closed';
+        exitPriceInput.required = isClosedTrade;
+        validateInput(exitPriceInput);
     });
 
     function validateInput(input) {
-        const value = numberFormatter.unformat(input.value);
-        const isValid = value !== null && !isNaN(value) && value >= 0;
+        // Clear previous validation state
+        input.classList.remove('is-valid', 'is-invalid');
         
-        if (input.value.trim()) {
-            input.classList.toggle('is-valid', isValid);
-            input.classList.toggle('is-invalid', !isValid);
-        } else {
-            input.classList.remove('is-valid', 'is-invalid');
+        // Skip validation if the field is not required and empty
+        if (!input.required && !input.value.trim()) {
+            return true;
         }
+
+        let isValid = true;
+        const value = input.value.trim();
+
+        if (input.classList.contains('number-input')) {
+            const numValue = numberFormatter.unformat(value);
+            isValid = numValue !== null && !isNaN(numValue) && numValue >= 0;
+
+            // Special validation for exit price when status is "Closed"
+            if (input.id === 'exitPrice' && statusSelect.value === 'Closed') {
+                isValid = isValid && value !== '';
+            }
+        } else {
+            isValid = value !== '';
+        }
+
+        // Update validation classes
+        input.classList.toggle('is-valid', isValid);
+        input.classList.toggle('is-invalid', !isValid);
         
         return isValid;
     }
 
-    // Form validation
     function validateForm() {
+        console.log('Validating form...');
         const inputs = tradeForm.querySelectorAll('input[required], select[required]');
         let isValid = true;
 
         inputs.forEach(input => {
-            if (input.classList.contains('number-input')) {
-                if (!validateInput(input)) {
-                    isValid = false;
-                }
-            } else if (!input.value.trim()) {
+            if (!validateInput(input)) {
+                console.log(`Validation failed for ${input.id}`);
                 isValid = false;
-                input.classList.add('is-invalid');
-            } else {
-                input.classList.remove('is-invalid');
             }
         });
 
         // Additional validation for exit price when status is "Closed"
-        const status = document.getElementById('status');
-        const exitPrice = document.getElementById('exitPrice');
-        if (status.value === 'Closed') {
-            if (!validateInput(exitPrice)) {
+        if (statusSelect.value === 'Closed') {
+            const exitPriceValid = validateInput(exitPriceInput);
+            if (!exitPriceValid) {
+                console.log('Exit price validation failed for closed trade');
                 isValid = false;
-                exitPrice.classList.add('is-invalid');
             }
         }
 
+        console.log(`Form validation result: ${isValid}`);
         return isValid;
     }
 
     // Form submission
     tradeForm.addEventListener('submit', async function(e) {
         e.preventDefault();
+        console.log('Form submitted, performing validation...');
 
         if (!validateForm()) {
+            console.log('Form validation failed');
+            showAlert('Please correct the errors in the form.', 'danger');
             return;
         }
 
         const formData = new FormData(tradeForm);
         const data = {};
         
+        // Process form data
         for (let [key, value] of formData.entries()) {
             if (key === 'market' || key === 'status') {
                 data[key] = value;
             } else {
                 const numValue = numberFormatter.unformat(value);
-                data[key] = numValue === null ? null : numValue;
+                data[key] = numValue;
             }
         }
+
+        console.log('Submitting trade data:', data);
 
         try {
             const response = await fetch('/add_trade', {
@@ -140,9 +172,11 @@ document.addEventListener('DOMContentLoaded', function() {
             const result = await response.json();
             
             if (!response.ok) {
+                console.error('Server returned error:', result);
                 throw new Error(result.error || 'Failed to add trade');
             }
 
+            console.log('Trade added successfully:', result);
             trades = result.trades;
             updateTradesTable();
             tradeForm.reset();
@@ -151,7 +185,7 @@ document.addEventListener('DOMContentLoaded', function() {
             showAlert('Trade added successfully!', 'success');
 
         } catch (error) {
-            console.error('Error:', error);
+            console.error('Error adding trade:', error);
             showAlert(error.message || 'Failed to add trade. Please try again.', 'danger');
         }
     });
@@ -171,7 +205,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 5000);
     }
 
-    // Table sorting
+    // Table sorting and filtering implementation...
     document.querySelectorAll('.sortable').forEach(header => {
         header.addEventListener('click', () => {
             const column = header.dataset.sort;
@@ -181,7 +215,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Table filtering
     tradeFilter.addEventListener('input', updateTradesTable);
     clearFilterBtn.addEventListener('click', () => {
         tradeFilter.value = '';
@@ -201,10 +234,10 @@ document.addEventListener('DOMContentLoaded', function() {
             let aVal = a[currentSort.column];
             let bVal = b[currentSort.column];
 
-            // Handle null values in sorting
-            if (aVal === null) return 1;
-            if (bVal === null) return -1;
-            if (aVal === null && bVal === null) return 0;
+            // Handle null/undefined values in sorting
+            if (aVal === null || aVal === undefined) return 1;
+            if (bVal === null || bVal === undefined) return -1;
+            if ((aVal === null || aVal === undefined) && (bVal === null || bVal === undefined)) return 0;
 
             // Convert to comparable values
             if (typeof aVal === 'string') aVal = aVal.toLowerCase();
@@ -231,7 +264,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function formatCurrency(value) {
-        if (value === null) return '-';
+        if (value === null || value === undefined) return '-';
         return new Intl.NumberFormat('es-ES', {
             style: 'currency',
             currency: 'USD'
@@ -239,12 +272,12 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function formatNumber(value) {
-        if (value === null) return '-';
+        if (value === null || value === undefined) return '-';
         return new Intl.NumberFormat('es-ES').format(value);
     }
 
     function formatPercentage(value) {
-        if (value === null) return '-';
+        if (value === null || value === undefined) return '-';
         return new Intl.NumberFormat('es-ES', {
             style: 'percent',
             minimumFractionDigits: 2,
@@ -253,7 +286,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function getProfitLossClass(value) {
-        if (value === null) return '';
+        if (value === null || value === undefined) return '';
         return value > 0 ? 'text-success' : value < 0 ? 'text-danger' : '';
     }
 });
