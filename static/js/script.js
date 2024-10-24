@@ -4,13 +4,104 @@ document.addEventListener('DOMContentLoaded', function() {
     const calculateBtn = document.getElementById('calculateBtn');
     const spinner = calculateBtn.querySelector('.spinner-border');
 
+    class NumberFormatter {
+        constructor() {
+            this.thousandsSeparator = '.';
+            this.decimalSeparator = ',';
+        }
+
+        format(value) {
+            if (!value) return '';
+
+            // Elimina cualquier caracter no numérico excepto coma
+            const cleanValue = value.replace(/[^\d,]/g, '');
+
+            // Divide en parte entera y decimal
+            const [integerPart, ...decimalParts] = cleanValue.split(',');
+
+            // Procesa la parte entera para agregar separadores de miles
+            const formattedInteger = this.#formatInteger(integerPart);
+
+            // Si hay parte decimal, la añade
+            const decimalPart = decimalParts.length > 0 ? decimalParts[decimalParts.length - 1] : '';
+
+            // Reconstruye el número
+            if (value.endsWith(',')) {
+                return `${formattedInteger},`;
+            } else if (decimalPart) {
+                return `${formattedInteger},${decimalPart}`;
+            }
+            return formattedInteger;
+        }
+
+        #formatInteger(value) {
+            // Elimina ceros no significativos al inicio
+            const trimmedValue = value.replace(/^0+/, '') || '0';
+
+            // Agrega los separadores de miles
+            return trimmedValue.replace(/\B(?=(\d{3})+(?!\d))/g, this.thousandsSeparator);
+        }
+
+        unformat(value) {
+            if (!value) return '';
+            return value.replace(/\./g, '').replace(',', '.');
+        }
+
+        getCaretPosition(oldValue, newValue, oldPosition) {
+            // Cuenta los separadores antes de la posición del cursor
+            const oldSeparators = (oldValue.slice(0, oldPosition).match(/\./g) || []).length;
+            const newSeparators = (newValue.slice(0, oldPosition).match(/\./g) || []).length;
+
+            return oldPosition + (newSeparators - oldSeparators);
+        }
+    }
+
+    const numberFormatter = new NumberFormatter();
+
+    function handleNumberInput(input, e) {
+        const oldValue = input.value;
+        const oldPosition = input.selectionStart;
+
+        // Si es una coma y ya existe una, no hace nada
+        if (e.data === ',' && oldValue.includes(',')) {
+            e.preventDefault();
+            return;
+        }
+
+        const formattedValue = numberFormatter.format(input.value);
+
+        if (oldValue !== formattedValue) {
+            input.value = formattedValue;
+
+            // Calcula la nueva posición del cursor
+            const newPosition = numberFormatter.getCaretPosition(oldValue, formattedValue, oldPosition);
+            input.setSelectionRange(newPosition, newPosition);
+        }
+
+        // Validación
+        validateInput(input);
+    }
+
+    function validateInput(input) {
+        const unformattedValue = numberFormatter.unformat(input.value);
+        const isValid = unformattedValue && !isNaN(parseFloat(unformattedValue));
+
+        if (input.value) {
+            input.classList.toggle('is-valid', isValid);
+            input.classList.toggle('is-invalid', !isValid);
+        } else {
+            input.classList.remove('is-valid', 'is-invalid');
+        }
+    }
+
     // Form validation
     function validateForm() {
         const inputs = form.querySelectorAll('input[required]');
         let isValid = true;
 
         inputs.forEach(input => {
-            if (!input.value) {
+            const unformattedValue = numberFormatter.unformat(input.value);
+            if (!unformattedValue) {
                 isValid = false;
                 input.classList.add('is-invalid');
             } else {
@@ -20,7 +111,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // Specific validation for risk percentage
             if (input.id === 'riskPercentage') {
-                const value = parseFloat(input.value);
+                const value = parseFloat(unformattedValue);
                 if (value < 0 || value > 100) {
                     isValid = false;
                     input.classList.add('is-invalid');
@@ -31,16 +122,39 @@ document.addEventListener('DOMContentLoaded', function() {
         return isValid;
     }
 
-    // Real-time validation
-    form.querySelectorAll('input').forEach(input => {
-        input.addEventListener('input', () => {
-            if (input.value) {
-                input.classList.remove('is-invalid');
-                input.classList.add('is-valid');
-            } else {
-                input.classList.remove('is-valid');
-                input.classList.add('is-invalid');
+    // Inicializar campos numéricos
+    const numberInputs = document.querySelectorAll('#capitalTotal, #entryPrice, #exitPrice');
+
+    numberInputs.forEach(input => {
+        input.setAttribute('type', 'text');
+        input.setAttribute('inputmode', 'decimal');
+
+        // Formatear valor inicial si existe
+        if (input.value) {
+            input.value = numberFormatter.format(input.value);
+        }
+
+        // Event listeners
+        input.addEventListener('input', (e) => handleNumberInput(input, e));
+
+        input.addEventListener('keypress', (e) => {
+            // Solo permite números y coma
+            if (!/[\d,]/.test(e.key)) {
+                e.preventDefault();
             }
+        });
+
+        input.addEventListener('paste', (e) => {
+            e.preventDefault();
+            const pastedText = (e.clipboardData || window.clipboardData).getData('text');
+            const cleanedText = pastedText.replace(/[^\d,]/g, '');
+
+            const cursorPos = input.selectionStart;
+            const textBeforeCursor = input.value.substring(0, cursorPos);
+            const textAfterCursor = input.value.substring(cursorPos);
+
+            input.value = textBeforeCursor + cleanedText + textAfterCursor;
+            input.dispatchEvent(new Event('input'));
         });
     });
 
@@ -51,7 +165,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const step = parseFloat(input.step) || 1;
             const min = parseFloat(input.min);
             const max = parseFloat(input.max);
-            let value = parseFloat(input.value) || 0;
+            let value = parseFloat(numberFormatter.unformat(input.value)) || 0;
 
             if (button.dataset.action === 'increment') {
                 value = Math.min(value + step, max || Infinity);
@@ -59,7 +173,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 value = Math.max(value - step, min || -Infinity);
             }
 
-            input.value = value;
+            input.value = numberFormatter.format(value.toString());
             input.dispatchEvent(new Event('input'));
         });
     });
@@ -77,7 +191,12 @@ document.addEventListener('DOMContentLoaded', function() {
         spinner.classList.remove('d-none');
 
         const formData = new FormData(form);
-        const data = Object.fromEntries(formData.entries());
+        const data = {};
+
+        // Desformatear números antes de enviar
+        for (let [key, value] of formData.entries()) {
+            data[key] = numberFormatter.unformat(value);
+        }
 
         try {
             const response = await fetch('/calculate', {
@@ -103,7 +222,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
             `;
         } finally {
-            // Hide loading state
             calculateBtn.disabled = false;
             spinner.classList.add('d-none');
         }
@@ -113,7 +231,7 @@ document.addEventListener('DOMContentLoaded', function() {
         resultDiv.innerHTML = `
             <div class="card shadow-lg border-0">
                 <div class="card-header bg-primary">
-                    <h2 class="card-title h4 mb-0 text-warning">Investment Results</h2>
+                    <h2 class="card-title h4 mb-0 text-yellow">Investment Results</h2>
                 </div>
                 <div class="card-body">
                     <div class="row g-4">
@@ -163,8 +281,9 @@ document.addEventListener('DOMContentLoaded', function() {
         `;
     }
 
+    // Función para formatear números en los resultados
     function formatNumber(num) {
-        return new Intl.NumberFormat('en-US', {
+        return new Intl.NumberFormat('es-ES', {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2
         }).format(num);

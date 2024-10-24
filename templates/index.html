@@ -19,10 +19,16 @@
                     <div class="card-body p-4">
                         <form id="calculator-form" class="needs-validation" novalidate>
                             <div class="row g-4">
+                                <!-- Investment Capital Input -->
                                 <div class="col-md-6">
                                     <div class="form-floating">
-                                        <input type="number" class="form-control" id="capitalTotal" name="capitalTotal" 
-                                               placeholder="Enter capital total" step="0.01" required>
+                                        <input type="text" 
+                                               class="form-control" 
+                                               id="capitalTotal" 
+                                               name="capitalTotal" 
+                                               placeholder="Enter capital total"
+                                               inputmode="decimal"
+                                               required>
                                         <label for="capitalTotal">Investment Capital</label>
                                         <div class="invalid-feedback">
                                             Please enter a valid investment amount
@@ -30,6 +36,7 @@
                                     </div>
                                 </div>
 
+                                <!-- Risk Percentage Input -->
                                 <div class="col-md-6">
                                     <div class="form-floating input-group-floating">
                                         <div class="input-group">
@@ -37,10 +44,15 @@
                                                 <i class="bi bi-dash-lg"></i>
                                             </button>
                                             <div class="form-floating flex-grow-1">
-                                                <input type="number" class="form-control border-start-0 border-end-0" 
-                                                       id="riskPercentage" name="riskPercentage" 
+                                                <input type="number" 
+                                                       class="form-control border-start-0 border-end-0" 
+                                                       id="riskPercentage" 
+                                                       name="riskPercentage" 
                                                        placeholder="Enter risk percentage" 
-                                                       step="0.1" min="0" max="100" required>
+                                                       step="0.1" 
+                                                       min="0" 
+                                                       max="100" 
+                                                       required>
                                                 <label for="riskPercentage">Risk Percentage</label>
                                             </div>
                                             <button type="button" class="btn btn-financial" data-action="increment">
@@ -53,10 +65,16 @@
                                     </div>
                                 </div>
 
+                                <!-- Purchase Price Input -->
                                 <div class="col-md-6">
                                     <div class="form-floating">
-                                        <input type="number" class="form-control" id="entryPrice" name="entryPrice" 
-                                               placeholder="Enter entry price" step="0.01" required>
+                                        <input type="text" 
+                                               class="form-control" 
+                                               id="entryPrice" 
+                                               name="entryPrice" 
+                                               placeholder="Enter entry price"
+                                               inputmode="decimal"
+                                               required>
                                         <label for="entryPrice">Purchase Price</label>
                                         <div class="invalid-feedback">
                                             Please enter a valid purchase price
@@ -64,10 +82,16 @@
                                     </div>
                                 </div>
 
+                                <!-- Stop Loss Price Input -->
                                 <div class="col-md-6">
                                     <div class="form-floating">
-                                        <input type="number" class="form-control" id="exitPrice" name="exitPrice" 
-                                               placeholder="Enter exit price" step="0.01" required>
+                                        <input type="text" 
+                                               class="form-control" 
+                                               id="exitPrice" 
+                                               name="exitPrice" 
+                                               placeholder="Enter exit price"
+                                               inputmode="decimal"
+                                               required>
                                         <label for="exitPrice">Stop Loss Price</label>
                                         <div class="invalid-feedback">
                                             Please enter a valid stop loss price
