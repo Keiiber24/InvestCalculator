@@ -85,13 +85,15 @@ def add_trade():
         if not data:
             return jsonify({"error": "No data provided"}), 400
 
-        # Log incoming request
+        # Log incoming request with detailed trade type information
         logger.info(f"Add trade request received: {data}")
+        logger.debug(f"Trade type received: {data.get('trade_type')} (type: {type(data.get('trade_type'))})")
 
         # Validate required fields
         required_fields = ['market', 'entryPrice', 'units', 'trade_type']
         missing_fields = [field for field in required_fields if field not in data]
         if missing_fields:
+            logger.error(f"Missing required fields: {missing_fields}")
             return jsonify({"error": f"Missing required fields: {', '.join(missing_fields)}"}), 400
 
         # Add the trade using the calculator

@@ -1,21 +1,37 @@
 import pandas as pd
 import numpy as np
 from datetime import datetime
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 pd.set_option('display.float_format', lambda x: '%.8f' % x)
 
 class TradeCalculator:
     def __init__(self):
         # Main trades DataFrame
-        self.trades = pd.DataFrame(columns=[
-            'id', 'Date', 'Market', 'Entry Price', 
-            'Units', 'Remaining Units', 'Position Size', 'Trade Type'
-        ])
+        self.trades = pd.DataFrame({
+            'id': pd.Series(dtype='int'),
+            'Date': pd.Series(dtype='datetime64[ns]'),
+            'Market': pd.Series(dtype='str'),
+            'Entry Price': pd.Series(dtype='float'),
+            'Units': pd.Series(dtype='float'),
+            'Remaining Units': pd.Series(dtype='float'),
+            'Position Size': pd.Series(dtype='float'),
+            'Trade Type': pd.Series(dtype='str')
+        })
         
         # Partial sales history DataFrame
-        self.sales_history = pd.DataFrame(columns=[
-            'trade_id', 'Date', 'Units Sold', 'Exit Price', 
-            'Partial P/L', 'Partial P/L %'
-        ])
+        self.sales_history = pd.DataFrame({
+            'trade_id': pd.Series(dtype='int'),
+            'Date': pd.Series(dtype='datetime64[ns]'),
+            'Units Sold': pd.Series(dtype='float'),
+            'Exit Price': pd.Series(dtype='float'),
+            'Partial P/L': pd.Series(dtype='float'),
+            'Partial P/L %': pd.Series(dtype='float')
+        })
         
         self.trade_counter = 0
 
@@ -33,16 +49,32 @@ class TradeCalculator:
         except (ValueError, TypeError):
             raise ValueError(f"Invalid numeric value for {field_name}")
 
+    def validate_trade_type(self, trade_type):
+        """Validate trade type with case-insensitive comparison"""
+        if not isinstance(trade_type, str):
+            logger.error(f"Invalid trade type format: {type(trade_type)}")
+            raise ValueError("Trade type must be a string")
+
+        valid_types = ['fiat', 'crypto']
+        trade_type = trade_type.lower()
+        
+        if trade_type not in valid_types:
+            logger.error(f"Invalid trade type value: {trade_type}")
+            raise ValueError(f"Trade type must be one of: {', '.join(valid_types)}")
+            
+        logger.info(f"Trade type validated: {trade_type}")
+        return trade_type
+
     def add_trade(self, market, entry_price, units, trade_type='fiat'):
         """Add a new trade with trade type parameter"""
         try:
+            logger.info(f"Adding new trade: market={market}, entry_price={entry_price}, units={units}, trade_type={trade_type}")
+            
             # Validate inputs
             if not market or not isinstance(market, str):
                 raise ValueError("Market symbol is required and must be a string")
             
-            if trade_type not in ['fiat', 'crypto']:
-                raise ValueError("Trade type must be either 'fiat' or 'crypto'")
-            
+            trade_type = self.validate_trade_type(trade_type)
             entry_price = self.validate_numeric(entry_price, "Entry price")
             units = self.validate_numeric(units, "Units")
             
@@ -74,9 +106,11 @@ class TradeCalculator:
             new_trade = pd.DataFrame([trade])
             self.trades = pd.concat([self.trades, new_trade], ignore_index=True)
             
+            logger.info(f"Trade added successfully: ID={trade_id}")
             return self.clean_trade_data(trade)
             
         except Exception as e:
+            logger.error(f"Error adding trade: {str(e)}")
             raise ValueError(f"Error adding trade: {str(e)}")
 
     def sell_units(self, trade_id, units_to_sell, exit_price):
@@ -125,6 +159,7 @@ class TradeCalculator:
             }
             
         except Exception as e:
+            logger.error(f"Error processing sale: {str(e)}")
             raise ValueError(f"Error processing sale: {str(e)}")
 
     @staticmethod
