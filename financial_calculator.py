@@ -19,15 +19,16 @@ class TradeCalculator:
         self.trade_counter = 0
 
     def validate_numeric(self, value, field_name):
-        """Validate numeric input"""
+        """Validate numeric input with high precision"""
         if value is None or value == '':
             return None
         try:
-            value = float(value)
+            # Convert to np.float64 for higher precision
+            value = np.float64(value)
             if pd.isna(value):
                 return None
-            if value < 0:
-                raise ValueError(f"{field_name} cannot be negative")
+            if value <= 0:
+                raise ValueError(f"{field_name} must be greater than 0")
             return value
         except (ValueError, TypeError):
             raise ValueError(f"Invalid numeric value for {field_name}")
@@ -125,17 +126,18 @@ class TradeCalculator:
     @staticmethod
     def calculate_position_size(entry_price, units):
         """Calculate position size based on entry price and units"""
-        return float(entry_price * units)
+        # Use np.float64 for higher precision multiplication
+        return float(np.float64(entry_price) * np.float64(units))
     
     @staticmethod
     def calculate_profit_loss(entry_price, exit_price, units):
         """Calculate profit/loss in dollar amount"""
-        return float((exit_price - entry_price) * units)
+        return float(np.float64(exit_price - entry_price) * np.float64(units))
     
     @staticmethod
     def calculate_win_loss_percentage(entry_price, exit_price):
         """Calculate percentage gain/loss"""
-        return float(((exit_price - entry_price) / entry_price) * 100)
+        return float(((np.float64(exit_price) - np.float64(entry_price)) / np.float64(entry_price)) * 100)
 
     def get_trade_sales_history(self, trade_id):
         """Get sales history for a specific trade"""
@@ -152,6 +154,8 @@ class TradeCalculator:
         if isinstance(data, (list, tuple)):
             return [TradeCalculator.clean_trade_data(item) for item in data]
         elif isinstance(data, dict):
-            return {k: (v.isoformat() if isinstance(v, datetime) else None if pd.isna(v) else v) 
+            return {k: (v.isoformat() if isinstance(v, datetime) else 
+                      float(v) if isinstance(v, np.float64) else
+                      None if pd.isna(v) else v) 
                    for k, v in data.items()}
         return data

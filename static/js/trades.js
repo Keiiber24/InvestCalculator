@@ -17,17 +17,22 @@ document.addEventListener('DOMContentLoaded', function() {
 
         format(value) {
             if (!value) return '';
-            const cleanValue = value.replace(/[^\d,]/g, '');
-            const [integerPart, ...decimalParts] = cleanValue.split(',');
+            
+            const isNegative = value.startsWith('-');
+            value = value.replace('-', '');
+            
+            const parts = value.split(',');
+            const integerPart = parts[0].replace(/[^\d]/g, '');
+            const decimalPart = parts[1] ? parts[1].replace(/[^\d]/g, '') : '';
+            
             const formattedInteger = this.#formatInteger(integerPart);
-            const decimalPart = decimalParts.length > 0 ? decimalParts[decimalParts.length - 1] : '';
-
-            if (value.endsWith(',')) {
-                return `${formattedInteger},`;
-            } else if (decimalPart) {
-                return `${formattedInteger},${decimalPart}`;
+            
+            let result = formattedInteger;
+            if (value.includes(',') || decimalPart) {
+                result += ',' + decimalPart;
             }
-            return formattedInteger;
+            
+            return isNegative ? '-' + result : result;
         }
 
         #formatInteger(value) {
@@ -37,13 +42,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
         unformat(value) {
             if (!value) return null;
-            return parseFloat(value.replace(/\./g, '').replace(',', '.'));
+            const normalized = value.replace(/\./g, '').replace(',', '.');
+            return Number(normalized);
         }
     }
 
     const numberFormatter = new NumberFormatter();
 
-    // Form validation and submission handlers
     function validateInput(input) {
         input.classList.remove('is-valid', 'is-invalid');
         
@@ -88,7 +93,6 @@ document.addEventListener('DOMContentLoaded', function() {
         return isValid;
     }
 
-    // Initialize number inputs
     document.querySelectorAll('.number-input').forEach(input => {
         input.addEventListener('input', (e) => {
             const oldValue = input.value;
@@ -111,7 +115,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Form submission handlers
     tradeForm.addEventListener('submit', async function(e) {
         e.preventDefault();
 
@@ -215,7 +218,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Helper functions
     function showAlert(message, type, location = 'page') {
         const alertDiv = document.createElement('div');
         alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
@@ -233,7 +235,6 @@ document.addEventListener('DOMContentLoaded', function() {
         setTimeout(() => alertDiv.remove(), 5000);
     }
 
-    // Table sorting and filtering
     document.querySelectorAll('.sortable').forEach(header => {
         header.addEventListener('click', () => {
             const column = header.dataset.sort;
@@ -257,7 +258,6 @@ document.addEventListener('DOMContentLoaded', function() {
             )
         );
 
-        // Sort trades
         filteredTrades.sort((a, b) => {
             let aVal = a[currentSort.column];
             let bVal = b[currentSort.column];
@@ -307,7 +307,6 @@ document.addEventListener('DOMContentLoaded', function() {
             `;
         }).join('');
 
-        // Add click handlers for buttons
         document.querySelectorAll('.view-history-btn').forEach(button => {
             button.addEventListener('click', (e) => {
                 const tradeId = e.target.closest('tr').dataset.tradeId;
@@ -383,7 +382,8 @@ document.addEventListener('DOMContentLoaded', function() {
         if (value === null || value === undefined) return '-';
         const options = {
             minimumFractionDigits: type === 'units' ? 8 : 2,
-            maximumFractionDigits: type === 'units' ? 8 : 2
+            maximumFractionDigits: type === 'units' ? 8 : 2,
+            useGrouping: true
         };
         return new Intl.NumberFormat('es-ES', options).format(value);
     }
