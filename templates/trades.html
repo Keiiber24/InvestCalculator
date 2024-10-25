@@ -43,20 +43,6 @@
                     <div class="card-body">
                         <form id="trade-form" class="needs-validation" novalidate>
                             <div class="row g-3">
-                                <!-- Trade Type Selection -->
-                                <div class="col-md-4">
-                                    <div class="form-floating">
-                                        <select class="form-select" id="trade_type" name="trade_type" required>
-                                            <option value="fiat">Fiat</option>
-                                            <option value="crypto">Crypto</option>
-                                        </select>
-                                        <label for="trade_type">Trade Type</label>
-                                        <div class="invalid-feedback">
-                                            Please select a trade type
-                                        </div>
-                                    </div>
-                                </div>
-
                                 <div class="col-md-4">
                                     <div class="form-floating">
                                         <input type="text" class="form-control" id="market" name="market" required>
@@ -77,7 +63,7 @@
                                     </div>
                                 </div>
 
-                                <div class="col-md-12">
+                                <div class="col-md-4">
                                     <div class="form-floating">
                                         <input type="text" class="form-control number-input" id="units" name="units" required step="any">
                                         <label for="units">Units</label>

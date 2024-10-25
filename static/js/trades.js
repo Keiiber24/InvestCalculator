@@ -6,7 +6,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const partialSaleModal = new bootstrap.Modal(document.getElementById('partialSaleModal'));
     const partialSaleForm = document.getElementById('partial-sale-form');
     const salesHistoryBody = document.getElementById('salesHistoryBody');
-    const tradeTypeSelect = document.getElementById('trade_type');
     let trades = [];
     let currentSort = { column: 'Date', direction: 'desc' };
 
@@ -19,6 +18,7 @@ document.addEventListener('DOMContentLoaded', function() {
         format(value) {
             if (value === null || value === undefined || value === '') return '';
             
+            // Convert to string and clean
             let strValue = String(value);
             if (typeof value === 'number') {
                 strValue = value.toFixed(8);
@@ -51,7 +51,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const numberFormatter = new NumberFormatter();
 
-    // Number input handlers
+    // Initialize number inputs
     document.querySelectorAll('.number-input').forEach(input => {
         input.addEventListener('input', (e) => {
             const oldValue = input.value;
@@ -74,12 +74,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    function validateTradeType() {
-        const value = tradeTypeSelect.value.toLowerCase();
-        const isValid = value === 'fiat' || value === 'crypto';
-        return isValid;
-    }
-
     function validateInput(input) {
         input.classList.remove('is-valid', 'is-invalid');
         
@@ -94,6 +88,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const numValue = numberFormatter.unformat(value);
             isValid = numValue !== null && !isNaN(numValue) && numValue > 0;
             
+            // Additional validation for sale units
             if (input.id === 'saleUnits') {
                 const tradeId = document.getElementById('saleTradeId').value;
                 const trade = trades.find(t => t.id === parseInt(tradeId));
@@ -101,8 +96,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     isValid = false;
                 }
             }
-        } else if (input.id === 'trade_type') {
-            isValid = validateTradeType();
         } else {
             isValid = value !== '';
         }
@@ -114,7 +107,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function validateForm(form) {
-        const inputs = form.querySelectorAll('input[required], select[required]');
+        const inputs = form.querySelectorAll('input[required]');
         let isValid = true;
 
         inputs.forEach(input => {
@@ -126,7 +119,7 @@ document.addEventListener('DOMContentLoaded', function() {
         return isValid;
     }
 
-    // Trade form submission
+    // Trade Form Submission
     tradeForm.addEventListener('submit', async function(e) {
         e.preventDefault();
 
@@ -139,9 +132,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const data = {};
         
         for (let [key, value] of formData.entries()) {
-            data[key] = key === 'market' ? value : 
-                       key === 'trade_type' ? value.toLowerCase() :
-                       numberFormatter.unformat(value);
+            data[key] = key === 'market' ? value : numberFormatter.unformat(value);
         }
 
         try {
@@ -180,7 +171,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Partial sale form submission
+    // Partial Sale Form Submission
     partialSaleForm.addEventListener('submit', async function(e) {
         e.preventDefault();
 
@@ -267,15 +258,6 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     function updateTradesTable() {
-        if (!trades || !trades.length) {
-            tradesTableBody.innerHTML = `
-                <tr>
-                    <td colspan="8" class="text-center">No trades available</td>
-                </tr>
-            `;
-            return;
-        }
-
         const filterValue = tradeFilter.value.toLowerCase();
         let filteredTrades = trades.filter(trade => 
             Object.values(trade).some(value => 
@@ -283,6 +265,7 @@ document.addEventListener('DOMContentLoaded', function() {
             )
         );
 
+        // Sort trades
         filteredTrades.sort((a, b) => {
             let aVal = a[currentSort.column];
             let bVal = b[currentSort.column];
@@ -305,16 +288,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 '<span class="badge bg-success">Open</span>' : 
                 '<span class="badge bg-secondary">Closed</span>';
             
-            const isCrypto = trade['Trade Type'] === 'crypto';
-            
             return `
                 <tr data-trade-id="${trade.id}">
                     <td>${new Date(trade.Date).toLocaleString()}</td>
                     <td>${trade.Market}</td>
-                    <td>${formatCurrency(trade['Entry Price'], isCrypto)}</td>
+                    <td>${formatCurrency(trade['Entry Price'])}</td>
                     <td>${formatNumber(trade.Units, true)}</td>
                     <td>${formatNumber(trade['Remaining Units'], true)}</td>
-                    <td>${formatCurrency(trade['Position Size'], isCrypto)}</td>
+                    <td>${formatCurrency(trade['Position Size'])}</td>
                     <td>${statusBadge}</td>
                     <td>
                         <div class="btn-group">
@@ -334,7 +315,7 @@ document.addEventListener('DOMContentLoaded', function() {
             `;
         }).join('');
 
-        // Add event listeners to buttons
+        // Add click handlers for buttons
         document.querySelectorAll('.view-history-btn').forEach(button => {
             button.addEventListener('click', (e) => {
                 const tradeId = e.target.closest('tr').dataset.tradeId;
@@ -356,6 +337,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         document.getElementById('saleTradeId').value = tradeId;
         
+        // Show/hide sale form based on mode and trade status
         const saleForm = document.getElementById('partial-sale-form');
         const modalTitle = document.querySelector('.modal-title');
         
@@ -387,15 +369,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function updateSalesHistory(salesHistory) {
-        if (!salesHistory || !salesHistory.length) {
-            salesHistoryBody.innerHTML = `
-                <tr>
-                    <td colspan="5" class="text-center">No sales history available</td>
-                </tr>
-            `;
-            return;
-        }
-
         salesHistoryBody.innerHTML = salesHistory.map(sale => `
             <tr>
                 <td>${new Date(sale.Date).toLocaleString()}</td>
@@ -405,15 +378,23 @@ document.addEventListener('DOMContentLoaded', function() {
                 <td class="${getProfitLossClass(sale['Partial P/L %'])}">${formatPercentage(sale['Partial P/L %'])}</td>
             </tr>
         `).join('');
+
+        if (salesHistory.length === 0) {
+            salesHistoryBody.innerHTML = `
+                <tr>
+                    <td colspan="5" class="text-center">No sales history available</td>
+                </tr>
+            `;
+        }
     }
 
-    function formatCurrency(value, isCrypto = false) {
+    function formatCurrency(value) {
         if (value === null || value === undefined) return '-';
         return new Intl.NumberFormat('es-ES', {
             style: 'currency',
             currency: 'USD',
-            minimumFractionDigits: isCrypto ? 8 : 2,
-            maximumFractionDigits: isCrypto ? 8 : 2
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
         }).format(value);
     }
 
@@ -438,7 +419,4 @@ document.addEventListener('DOMContentLoaded', function() {
         if (value === null || value === undefined) return '';
         return value > 0 ? 'text-success' : value < 0 ? 'text-danger' : '';
     }
-
-    // Initial table update
-    updateTradesTable();
 });
