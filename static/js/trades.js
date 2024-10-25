@@ -278,41 +278,74 @@ document.addEventListener('DOMContentLoaded', function() {
             return 0;
         });
 
-        tradesTableBody.innerHTML = filteredTrades.map(trade => `
-            <tr data-trade-id="${trade.id}">
-                <td>${new Date(trade.Date).toLocaleString()}</td>
-                <td>${trade.Market}</td>
-                <td>${formatCurrency(trade['Entry Price'])}</td>
-                <td>${formatNumber(trade.Units)}</td>
-                <td>${formatNumber(trade['Remaining Units'])}</td>
-                <td>${formatCurrency(trade['Position Size'])}</td>
-                <td>
-                    ${trade['Remaining Units'] > 0 ? `
-                        <button class="btn btn-sm btn-outline-warning sell-units-btn">
-                            <i class="bi bi-cash-coin me-1"></i>
-                            Sell Units
-                        </button>
-                    ` : '-'}
-                </td>
-            </tr>
-        `).join('');
+        tradesTableBody.innerHTML = filteredTrades.map(trade => {
+            const isOpen = trade['Remaining Units'] > 0;
+            const statusBadge = isOpen ? 
+                '<span class="badge bg-success">Open</span>' : 
+                '<span class="badge bg-secondary">Closed</span>';
+            
+            return `
+                <tr data-trade-id="${trade.id}">
+                    <td>${new Date(trade.Date).toLocaleString()}</td>
+                    <td>${trade.Market}</td>
+                    <td>${formatCurrency(trade['Entry Price'])}</td>
+                    <td>${formatNumber(trade.Units)}</td>
+                    <td>${formatNumber(trade['Remaining Units'])}</td>
+                    <td>${formatCurrency(trade['Position Size'])}</td>
+                    <td>${statusBadge}</td>
+                    <td>
+                        <div class="btn-group">
+                            <button class="btn btn-sm btn-outline-info view-history-btn" title="View History">
+                                <i class="bi bi-clock-history me-1"></i>
+                                History
+                            </button>
+                            ${isOpen ? `
+                                <button class="btn btn-sm btn-outline-warning sell-units-btn" title="Sell Units">
+                                    <i class="bi bi-cash-coin me-1"></i>
+                                    Sell
+                                </button>
+                            ` : ''}
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }).join('');
 
-        // Add click handlers for sell buttons
+        // Add click handlers for buttons
+        document.querySelectorAll('.view-history-btn').forEach(button => {
+            button.addEventListener('click', (e) => {
+                const tradeId = e.target.closest('tr').dataset.tradeId;
+                openSaleModal(parseInt(tradeId), 'history');
+            });
+        });
+
         document.querySelectorAll('.sell-units-btn').forEach(button => {
             button.addEventListener('click', (e) => {
                 const tradeId = e.target.closest('tr').dataset.tradeId;
-                openSaleModal(parseInt(tradeId));
+                openSaleModal(parseInt(tradeId), 'sell');
             });
         });
     }
 
-    async function openSaleModal(tradeId) {
+    async function openSaleModal(tradeId, mode = 'history') {
         const trade = trades.find(t => t.id === tradeId);
         if (!trade) return;
 
         document.getElementById('saleTradeId').value = tradeId;
-        document.getElementById('saleUnits').value = '';
-        document.getElementById('saleExitPrice').value = '';
+        
+        // Show/hide sale form based on mode and trade status
+        const saleForm = document.getElementById('partial-sale-form');
+        const modalTitle = document.querySelector('.modal-title');
+        
+        if (mode === 'sell' && trade['Remaining Units'] > 0) {
+            saleForm.style.display = 'block';
+            modalTitle.textContent = 'Sell Units';
+            document.getElementById('saleUnits').value = '';
+            document.getElementById('saleExitPrice').value = '';
+        } else {
+            saleForm.style.display = 'none';
+            modalTitle.textContent = 'Trade History';
+        }
 
         try {
             const response = await fetch(`/get_sales_history/${tradeId}`);
@@ -341,6 +374,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 <td class="${getProfitLossClass(sale['Partial P/L %'])}">${formatPercentage(sale['Partial P/L %'])}</td>
             </tr>
         `).join('');
+
+        if (salesHistory.length === 0) {
+            salesHistoryBody.innerHTML = `
+                <tr>
+                    <td colspan="5" class="text-center">No sales history available</td>
+                </tr>
+            `;
+        }
     }
 
     function formatCurrency(value) {
