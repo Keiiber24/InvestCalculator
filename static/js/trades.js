@@ -6,8 +6,16 @@ document.addEventListener('DOMContentLoaded', function() {
     const partialSaleModal = new bootstrap.Modal(document.getElementById('partialSaleModal'));
     const partialSaleForm = document.getElementById('partial-sale-form');
     const salesHistoryBody = document.getElementById('salesHistoryBody');
+    const tradeTypeField = document.getElementById('trade_type');
     let trades = [];
     let currentSort = { column: 'Date', direction: 'desc' };
+
+    // Handle trade type radio buttons
+    document.querySelectorAll('input[name="trade_type"]').forEach(radio => {
+        radio.addEventListener('change', (e) => {
+            tradeTypeField.value = e.target.value;
+        });
+    });
 
     class NumberFormatter {
         constructor() {
@@ -158,6 +166,8 @@ document.addEventListener('DOMContentLoaded', function() {
             trades = result.trades;
             updateTradesTable();
             tradeForm.reset();
+            document.getElementById('fiat').checked = true;
+            tradeTypeField.value = 'fiat';
             showAlert('Trade added successfully!', 'success');
 
         } catch (error) {
@@ -258,6 +268,15 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     function updateTradesTable() {
+        if (!trades || !trades.length) {
+            tradesTableBody.innerHTML = `
+                <tr>
+                    <td colspan="8" class="text-center">No trades available</td>
+                </tr>
+            `;
+            return;
+        }
+
         const filterValue = tradeFilter.value.toLowerCase();
         let filteredTrades = trades.filter(trade => 
             Object.values(trade).some(value => 
@@ -288,14 +307,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 '<span class="badge bg-success">Open</span>' : 
                 '<span class="badge bg-secondary">Closed</span>';
             
+            const isCrypto = trade['Trade Type'] === 'crypto';
+            
             return `
                 <tr data-trade-id="${trade.id}">
                     <td>${new Date(trade.Date).toLocaleString()}</td>
                     <td>${trade.Market}</td>
-                    <td>${formatCurrency(trade['Entry Price'])}</td>
+                    <td>${formatCurrency(trade['Entry Price'], isCrypto)}</td>
                     <td>${formatNumber(trade.Units, true)}</td>
                     <td>${formatNumber(trade['Remaining Units'], true)}</td>
-                    <td>${formatCurrency(trade['Position Size'])}</td>
+                    <td>${formatCurrency(trade['Position Size'], isCrypto)}</td>
                     <td>${statusBadge}</td>
                     <td>
                         <div class="btn-group">
@@ -369,6 +390,15 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function updateSalesHistory(salesHistory) {
+        if (!salesHistory || !salesHistory.length) {
+            salesHistoryBody.innerHTML = `
+                <tr>
+                    <td colspan="5" class="text-center">No sales history available</td>
+                </tr>
+            `;
+            return;
+        }
+
         salesHistoryBody.innerHTML = salesHistory.map(sale => `
             <tr>
                 <td>${new Date(sale.Date).toLocaleString()}</td>
@@ -378,23 +408,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 <td class="${getProfitLossClass(sale['Partial P/L %'])}">${formatPercentage(sale['Partial P/L %'])}</td>
             </tr>
         `).join('');
-
-        if (salesHistory.length === 0) {
-            salesHistoryBody.innerHTML = `
-                <tr>
-                    <td colspan="5" class="text-center">No sales history available</td>
-                </tr>
-            `;
-        }
     }
 
-    function formatCurrency(value) {
+    function formatCurrency(value, isCrypto = false) {
         if (value === null || value === undefined) return '-';
         return new Intl.NumberFormat('es-ES', {
             style: 'currency',
             currency: 'USD',
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2
+            minimumFractionDigits: isCrypto ? 8 : 2,
+            maximumFractionDigits: isCrypto ? 8 : 2
         }).format(value);
     }
 
@@ -419,4 +441,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (value === null || value === undefined) return '';
         return value > 0 ? 'text-success' : value < 0 ? 'text-danger' : '';
     }
+
+    // Initial table update
+    updateTradesTable();
 });

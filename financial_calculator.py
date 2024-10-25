@@ -1,14 +1,14 @@
 import pandas as pd
 import numpy as np
 from datetime import datetime
-pd.set_option('display.float_format', lambda x: '%.2f' % x)
+pd.set_option('display.float_format', lambda x: '%.8f' % x)
 
 class TradeCalculator:
     def __init__(self):
         # Main trades DataFrame
         self.trades = pd.DataFrame(columns=[
             'id', 'Date', 'Market', 'Entry Price', 
-            'Units', 'Remaining Units', 'Position Size'
+            'Units', 'Remaining Units', 'Position Size', 'Trade Type'
         ])
         
         # Partial sales history DataFrame
@@ -33,12 +33,15 @@ class TradeCalculator:
         except (ValueError, TypeError):
             raise ValueError(f"Invalid numeric value for {field_name}")
 
-    def add_trade(self, market, entry_price, units):
-        """Add a new trade with simplified parameters"""
+    def add_trade(self, market, entry_price, units, trade_type='fiat'):
+        """Add a new trade with trade type parameter"""
         try:
             # Validate inputs
             if not market or not isinstance(market, str):
                 raise ValueError("Market symbol is required and must be a string")
+            
+            if trade_type not in ['fiat', 'crypto']:
+                raise ValueError("Trade type must be either 'fiat' or 'crypto'")
             
             entry_price = self.validate_numeric(entry_price, "Entry price")
             units = self.validate_numeric(units, "Units")
@@ -63,7 +66,8 @@ class TradeCalculator:
                 'Entry Price': entry_price,
                 'Units': units,
                 'Remaining Units': units,
-                'Position Size': position_size
+                'Position Size': position_size,
+                'Trade Type': trade_type
             }
             
             # Add to DataFrame
@@ -126,7 +130,13 @@ class TradeCalculator:
     @staticmethod
     def calculate_position_size(entry_price, units):
         """Calculate position size based on entry price and units"""
-        return float(entry_price * units)
+        try:
+            # Ensure high precision for the calculation
+            entry_price = float(entry_price)
+            units = float(units)
+            return float(entry_price * units)
+        except (ValueError, TypeError):
+            return 0.0
     
     @staticmethod
     def calculate_profit_loss(entry_price, exit_price, units):
@@ -153,6 +163,6 @@ class TradeCalculator:
         if isinstance(data, (list, tuple)):
             return [TradeCalculator.clean_trade_data(item) for item in data]
         elif isinstance(data, dict):
-            return {k: (v.isoformat() if isinstance(v, datetime) else None if pd.isna(v) else v) 
+            return {k: (v.isoformat() if isinstance(v, datetime) else float(v) if isinstance(v, (int, float, np.integer, np.floating)) else v) 
                    for k, v in data.items()}
         return data

@@ -89,7 +89,7 @@ def add_trade():
         logger.info(f"Add trade request received: {data}")
 
         # Validate required fields
-        required_fields = ['market', 'entryPrice', 'units']
+        required_fields = ['market', 'entryPrice', 'units', 'trade_type']
         missing_fields = [field for field in required_fields if field not in data]
         if missing_fields:
             return jsonify({"error": f"Missing required fields: {', '.join(missing_fields)}"}), 400
@@ -99,7 +99,8 @@ def add_trade():
             trade = trade_calculator.add_trade(
                 market=data['market'],
                 entry_price=data['entryPrice'],
-                units=data['units']
+                units=data['units'],
+                trade_type=data['trade_type']
             )
 
             # Get trades data

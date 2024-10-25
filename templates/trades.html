@@ -41,7 +41,22 @@
                         <h2 class="card-title h4 mb-0 text-yellow">Add New Trade</h2>
                     </div>
                     <div class="card-body">
+                        <!-- Trade Type Selection -->
+                        <div class="btn-group w-100 mb-4" role="group" aria-label="Trade Type Selection">
+                            <input type="radio" class="btn-check" name="trade_type" id="fiat" value="fiat" checked required>
+                            <label class="btn btn-outline-warning" for="fiat">
+                                <i class="bi bi-currency-dollar me-1"></i>
+                                Fiat
+                            </label>
+                            <input type="radio" class="btn-check" name="trade_type" id="crypto" value="crypto" required>
+                            <label class="btn btn-outline-warning" for="crypto">
+                                <i class="bi bi-currency-bitcoin me-1"></i>
+                                Crypto
+                            </label>
+                        </div>
+
                         <form id="trade-form" class="needs-validation" novalidate>
+                            <input type="hidden" id="trade_type" name="trade_type" value="fiat" required>
                             <div class="row g-3">
                                 <div class="col-md-4">
                                     <div class="form-floating">
