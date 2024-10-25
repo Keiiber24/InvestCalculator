@@ -53,6 +53,9 @@ class TradeCalculator:
             self.trade_counter += 1
             trade_id = self.trade_counter
             
+            # Calculate initial position size based on entry price and units
+            position_size = self.calculate_position_size(entry_price, units)
+            
             trade = {
                 'id': trade_id,
                 'Date': datetime.now(),
@@ -60,7 +63,7 @@ class TradeCalculator:
                 'Entry Price': entry_price,
                 'Units': units,
                 'Remaining Units': units,
-                'Position Size': self.calculate_position_size(entry_price, units)
+                'Position Size': position_size
             }
             
             # Add to DataFrame
@@ -102,8 +105,11 @@ class TradeCalculator:
                 'Partial P/L %': partial_pl_percent
             }
             
-            # Update remaining units
-            self.trades.at[trade_idx, 'Remaining Units'] = trade['Remaining Units'] - units_to_sell
+            # Update remaining units and position size
+            remaining_units = trade['Remaining Units'] - units_to_sell
+            self.trades.at[trade_idx, 'Remaining Units'] = remaining_units
+            # Update position size based on remaining units
+            self.trades.at[trade_idx, 'Position Size'] = self.calculate_position_size(trade['Entry Price'], remaining_units)
             
             # Add to sales history
             new_sale = pd.DataFrame([sale])
@@ -119,7 +125,7 @@ class TradeCalculator:
 
     @staticmethod
     def calculate_position_size(entry_price, units):
-        """Calculate total position value"""
+        """Calculate position size based on entry price and units"""
         return float(entry_price * units)
     
     @staticmethod
