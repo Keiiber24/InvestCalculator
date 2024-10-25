@@ -19,7 +19,11 @@ document.addEventListener('DOMContentLoaded', function() {
             if (value === null || value === undefined || value === '') return '';
             
             // Convert to string and clean
-            const cleanValue = String(value).replace(/[^\d,]/g, '');
+            let strValue = String(value);
+            if (typeof value === 'number') {
+                strValue = value.toFixed(8);
+            }
+            const cleanValue = strValue.replace(/[^\d,]/g, '');
             const [integerPart, ...decimalParts] = cleanValue.split(',');
             const formattedInteger = this.#formatInteger(integerPart);
             const decimalPart = decimalParts.length > 0 ? decimalParts[decimalParts.length - 1] : '';
@@ -289,8 +293,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     <td>${new Date(trade.Date).toLocaleString()}</td>
                     <td>${trade.Market}</td>
                     <td>${formatCurrency(trade['Entry Price'])}</td>
-                    <td>${formatNumber(trade.Units)}</td>
-                    <td>${formatNumber(trade['Remaining Units'])}</td>
+                    <td>${formatNumber(trade.Units, true)}</td>
+                    <td>${formatNumber(trade['Remaining Units'], true)}</td>
                     <td>${formatCurrency(trade['Position Size'])}</td>
                     <td>${statusBadge}</td>
                     <td>
@@ -368,7 +372,7 @@ document.addEventListener('DOMContentLoaded', function() {
         salesHistoryBody.innerHTML = salesHistory.map(sale => `
             <tr>
                 <td>${new Date(sale.Date).toLocaleString()}</td>
-                <td>${formatNumber(sale['Units Sold'])}</td>
+                <td>${formatNumber(sale['Units Sold'], true)}</td>
                 <td>${formatCurrency(sale['Exit Price'])}</td>
                 <td class="${getProfitLossClass(sale['Partial P/L'])}">${formatCurrency(sale['Partial P/L'])}</td>
                 <td class="${getProfitLossClass(sale['Partial P/L %'])}">${formatPercentage(sale['Partial P/L %'])}</td>
@@ -388,13 +392,18 @@ document.addEventListener('DOMContentLoaded', function() {
         if (value === null || value === undefined) return '-';
         return new Intl.NumberFormat('es-ES', {
             style: 'currency',
-            currency: 'USD'
+            currency: 'USD',
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
         }).format(value);
     }
 
-    function formatNumber(value) {
+    function formatNumber(value, isUnits = false) {
         if (value === null || value === undefined) return '-';
-        return new Intl.NumberFormat('es-ES').format(value);
+        return new Intl.NumberFormat('es-ES', {
+            minimumFractionDigits: isUnits ? 8 : 2,
+            maximumFractionDigits: isUnits ? 8 : 2
+        }).format(value);
     }
 
     function formatPercentage(value) {
