@@ -16,15 +16,13 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         format(value) {
-            if (value === null || value === undefined || value === '') return '';
-            
-            // Convert to string and clean
-            const cleanValue = String(value).replace(/[^\d,]/g, '');
+            if (!value) return '';
+            const cleanValue = value.replace(/[^\d,]/g, '');
             const [integerPart, ...decimalParts] = cleanValue.split(',');
             const formattedInteger = this.#formatInteger(integerPart);
             const decimalPart = decimalParts.length > 0 ? decimalParts[decimalParts.length - 1] : '';
 
-            if (String(value).endsWith(',')) {
+            if (value.endsWith(',')) {
                 return `${formattedInteger},`;
             } else if (decimalPart) {
                 return `${formattedInteger},${decimalPart}`;
@@ -38,38 +36,14 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         unformat(value) {
-            if (value === null || value === undefined || value === '') return null;
-            const unformatted = value.replace(/\./g, '').replace(',', '.');
-            const parsed = parseFloat(unformatted);
-            return isNaN(parsed) ? null : parsed;
+            if (!value) return null;
+            return parseFloat(value.replace(/\./g, '').replace(',', '.'));
         }
     }
 
     const numberFormatter = new NumberFormatter();
 
-    // Initialize number inputs
-    document.querySelectorAll('.number-input').forEach(input => {
-        input.addEventListener('input', (e) => {
-            const oldValue = input.value;
-            const formattedValue = numberFormatter.format(input.value);
-            
-            if (oldValue !== formattedValue) {
-                input.value = formattedValue;
-            }
-            validateInput(input);
-        });
-
-        input.addEventListener('keypress', (e) => {
-            if (!/[\d,]/.test(e.key)) {
-                e.preventDefault();
-            }
-        });
-
-        input.addEventListener('blur', () => {
-            validateInput(input);
-        });
-    });
-
+    // Form validation and submission handlers
     function validateInput(input) {
         input.classList.remove('is-valid', 'is-invalid');
         
@@ -84,7 +58,6 @@ document.addEventListener('DOMContentLoaded', function() {
             const numValue = numberFormatter.unformat(value);
             isValid = numValue !== null && !isNaN(numValue) && numValue > 0;
             
-            // Additional validation for sale units
             if (input.id === 'saleUnits') {
                 const tradeId = document.getElementById('saleTradeId').value;
                 const trade = trades.find(t => t.id === parseInt(tradeId));
@@ -115,7 +88,30 @@ document.addEventListener('DOMContentLoaded', function() {
         return isValid;
     }
 
-    // Trade Form Submission
+    // Initialize number inputs
+    document.querySelectorAll('.number-input').forEach(input => {
+        input.addEventListener('input', (e) => {
+            const oldValue = input.value;
+            const formattedValue = numberFormatter.format(input.value);
+            
+            if (oldValue !== formattedValue) {
+                input.value = formattedValue;
+            }
+            validateInput(input);
+        });
+
+        input.addEventListener('keypress', (e) => {
+            if (!/[\d,]/.test(e.key)) {
+                e.preventDefault();
+            }
+        });
+
+        input.addEventListener('blur', () => {
+            validateInput(input);
+        });
+    });
+
+    // Form submission handlers
     tradeForm.addEventListener('submit', async function(e) {
         e.preventDefault();
 
@@ -128,7 +124,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const data = {};
         
         for (let [key, value] of formData.entries()) {
-            data[key] = key === 'market' ? value : numberFormatter.unformat(value);
+            data[key] = numberFormatter.unformat(value);
         }
 
         try {
@@ -167,7 +163,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Partial Sale Form Submission
     partialSaleForm.addEventListener('submit', async function(e) {
         e.preventDefault();
 
@@ -220,6 +215,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
+    // Helper functions
     function showAlert(message, type, location = 'page') {
         const alertDiv = document.createElement('div');
         alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
@@ -289,8 +285,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     <td>${new Date(trade.Date).toLocaleString()}</td>
                     <td>${trade.Market}</td>
                     <td>${formatCurrency(trade['Entry Price'])}</td>
-                    <td>${formatNumber(trade.Units)}</td>
-                    <td>${formatNumber(trade['Remaining Units'])}</td>
+                    <td>${formatNumber(trade.Units, 'units')}</td>
+                    <td>${formatNumber(trade['Remaining Units'], 'units')}</td>
                     <td>${formatCurrency(trade['Position Size'])}</td>
                     <td>${statusBadge}</td>
                     <td>
@@ -333,7 +329,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
         document.getElementById('saleTradeId').value = tradeId;
         
-        // Show/hide sale form based on mode and trade status
         const saleForm = document.getElementById('partial-sale-form');
         const modalTitle = document.querySelector('.modal-title');
         
@@ -368,7 +363,7 @@ document.addEventListener('DOMContentLoaded', function() {
         salesHistoryBody.innerHTML = salesHistory.map(sale => `
             <tr>
                 <td>${new Date(sale.Date).toLocaleString()}</td>
-                <td>${formatNumber(sale['Units Sold'])}</td>
+                <td>${formatNumber(sale['Units Sold'], 'units')}</td>
                 <td>${formatCurrency(sale['Exit Price'])}</td>
                 <td class="${getProfitLossClass(sale['Partial P/L'])}">${formatCurrency(sale['Partial P/L'])}</td>
                 <td class="${getProfitLossClass(sale['Partial P/L %'])}">${formatPercentage(sale['Partial P/L %'])}</td>
@@ -384,17 +379,21 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    function formatNumber(value, type = 'default') {
+        if (value === null || value === undefined) return '-';
+        const options = {
+            minimumFractionDigits: type === 'units' ? 8 : 2,
+            maximumFractionDigits: type === 'units' ? 8 : 2
+        };
+        return new Intl.NumberFormat('es-ES', options).format(value);
+    }
+
     function formatCurrency(value) {
         if (value === null || value === undefined) return '-';
         return new Intl.NumberFormat('es-ES', {
             style: 'currency',
             currency: 'USD'
         }).format(value);
-    }
-
-    function formatNumber(value) {
-        if (value === null || value === undefined) return '-';
-        return new Intl.NumberFormat('es-ES').format(value);
     }
 
     function formatPercentage(value) {

@@ -1,7 +1,6 @@
 import pandas as pd
 import numpy as np
 from datetime import datetime
-pd.set_option('display.float_format', lambda x: '%.2f' % x)
 
 class TradeCalculator:
     def __init__(self):
@@ -53,7 +52,7 @@ class TradeCalculator:
             self.trade_counter += 1
             trade_id = self.trade_counter
             
-            # Calculate initial position size based on entry price and units
+            # Calculate position size based on entry price and units
             position_size = self.calculate_position_size(entry_price, units)
             
             trade = {
