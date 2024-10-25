@@ -46,9 +46,9 @@
                                 <div class="col-md-4">
                                     <div class="form-floating">
                                         <input type="text" class="form-control" id="market" name="market" required>
-                                        <label for="market">Market Symbol</label>
+                                        <label for="market">Ticker</label>
                                         <div class="invalid-feedback">
-                                            Please enter a market symbol
+                                            Please enter a ticker symbol
                                         </div>
                                     </div>
                                 </div>
@@ -56,9 +56,9 @@
                                 <div class="col-md-4">
                                     <div class="form-floating">
                                         <input type="text" class="form-control number-input" id="entryPrice" name="entryPrice" required>
-                                        <label for="entryPrice">Entry Price</label>
+                                        <label for="entryPrice">Price</label>
                                         <div class="invalid-feedback">
-                                            Please enter a valid entry price
+                                            Please enter a valid price
                                         </div>
                                     </div>
                                 </div>
@@ -101,12 +101,12 @@
                                 <thead>
                                     <tr>
                                         <th class="sortable" data-sort="Date">Date <i class="bi bi-arrow-down-up"></i></th>
-                                        <th class="sortable" data-sort="Market">Market <i class="bi bi-arrow-down-up"></i></th>
-                                        <th class="sortable" data-sort="Entry Price">Entry Price <i class="bi bi-arrow-down-up"></i></th>
+                                        <th class="sortable" data-sort="Market">Ticker <i class="bi bi-arrow-down-up"></i></th>
+                                        <th class="sortable" data-sort="Entry Price">Price <i class="bi bi-arrow-down-up"></i></th>
                                         <th class="sortable" data-sort="Units">Total Units <i class="bi bi-arrow-down-up"></i></th>
                                         <th class="sortable" data-sort="Remaining Units">Remaining Units <i class="bi bi-arrow-down-up"></i></th>
                                         <th class="sortable" data-sort="Position Size">Position Size <i class="bi bi-arrow-down-up"></i></th>
-                                        <th class="sortable" data-sort="Status">Status <i class="bi bi-arrow-down-up"></i></th>
+                                        <th class="sortable" data-sort="Status">Action <i class="bi bi-arrow-down-up"></i></th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
@@ -144,9 +144,9 @@
                             <div class="col-md-6">
                                 <div class="form-floating">
                                     <input type="text" class="form-control number-input" id="saleExitPrice" name="exitPrice" required>
-                                    <label for="saleExitPrice">Exit Price</label>
+                                    <label for="saleExitPrice">Price</label>
                                     <div class="invalid-feedback">
-                                        Please enter a valid exit price
+                                        Please enter a valid price
                                     </div>
                                 </div>
                             </div>
@@ -166,7 +166,7 @@
                                 <tr>
                                     <th>Date</th>
                                     <th>Units Sold</th>
-                                    <th>Exit Price</th>
+                                    <th>Price</th>
                                     <th>P/L</th>
                                     <th>P/L %</th>
                                 </tr>

@@ -38,7 +38,6 @@
                     <div class="card-body p-4">
                         <form id="calculator-form" class="needs-validation" novalidate>
                             <div class="row g-4">
-                                <!-- Rest of the form content remains the same -->
                                 <!-- Investment Capital Input -->
                                 <div class="col-md-6">
                                     <div class="form-floating">
@@ -85,19 +84,19 @@
                                     </div>
                                 </div>
 
-                                <!-- Purchase Price Input -->
+                                <!-- Entry Price Input -->
                                 <div class="col-md-6">
                                     <div class="form-floating">
                                         <input type="text" 
                                                class="form-control" 
                                                id="entryPrice" 
                                                name="entryPrice" 
-                                               placeholder="Enter entry price"
+                                               placeholder="Enter price"
                                                inputmode="decimal"
                                                required>
-                                        <label for="entryPrice">Purchase Price</label>
+                                        <label for="entryPrice">Price</label>
                                         <div class="invalid-feedback">
-                                            Please enter a valid purchase price
+                                            Please enter a valid price
                                         </div>
                                     </div>
                                 </div>
@@ -109,10 +108,10 @@
                                                class="form-control" 
                                                id="exitPrice" 
                                                name="exitPrice" 
-                                               placeholder="Enter exit price"
+                                               placeholder="Enter stop loss"
                                                inputmode="decimal"
                                                required>
-                                        <label for="exitPrice">Stop Loss Price</label>
+                                        <label for="exitPrice">Stop Loss</label>
                                         <div class="invalid-feedback">
                                             Please enter a valid stop loss price
                                         </div>
