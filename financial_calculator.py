@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 from datetime import datetime
-import re
+pd.set_option('display.float_format', lambda x: '%.2f' % x)
 
 class TradeCalculator:
     def __init__(self):
@@ -19,29 +19,16 @@ class TradeCalculator:
         
         self.trade_counter = 0
 
-    def validate_market_symbol(self, market):
-        """Validate market symbol with support for crypto pairs"""
-        if not market or not isinstance(market, str):
-            raise ValueError("Market symbol is required")
-        
-        # Allow letters, numbers, hyphens, forward slashes, and dots
-        # Common format for crypto pairs like BTC/USDT or traditional pairs like EUR/USD
-        if not re.match(r'^[A-Za-z0-9\-./]+$', market):
-            raise ValueError("Market symbol can only contain letters, numbers, hyphens, dots, and forward slashes")
-        
-        return market.upper()
-
     def validate_numeric(self, value, field_name):
-        """Validate numeric input with high precision"""
+        """Validate numeric input"""
         if value is None or value == '':
             return None
         try:
-            # Convert to np.float64 for higher precision
-            value = np.float64(value)
+            value = float(value)
             if pd.isna(value):
                 return None
-            if value <= 0:
-                raise ValueError(f"{field_name} must be greater than 0")
+            if value < 0:
+                raise ValueError(f"{field_name} cannot be negative")
             return value
         except (ValueError, TypeError):
             raise ValueError(f"Invalid numeric value for {field_name}")
@@ -49,8 +36,9 @@ class TradeCalculator:
     def add_trade(self, market, entry_price, units):
         """Add a new trade with simplified parameters"""
         try:
-            # Validate market symbol with improved crypto support
-            market = self.validate_market_symbol(market)
+            # Validate inputs
+            if not market or not isinstance(market, str):
+                raise ValueError("Market symbol is required and must be a string")
             
             entry_price = self.validate_numeric(entry_price, "Entry price")
             units = self.validate_numeric(units, "Units")
@@ -71,7 +59,7 @@ class TradeCalculator:
             trade = {
                 'id': trade_id,
                 'Date': datetime.now(),
-                'Market': market,
+                'Market': market.upper(),
                 'Entry Price': entry_price,
                 'Units': units,
                 'Remaining Units': units,
@@ -121,9 +109,7 @@ class TradeCalculator:
             remaining_units = trade['Remaining Units'] - units_to_sell
             self.trades.at[trade_idx, 'Remaining Units'] = remaining_units
             # Update position size based on remaining units
-            self.trades.at[trade_idx, 'Position Size'] = self.calculate_position_size(
-                trade['Entry Price'], remaining_units
-            )
+            self.trades.at[trade_idx, 'Position Size'] = self.calculate_position_size(trade['Entry Price'], remaining_units)
             
             # Add to sales history
             new_sale = pd.DataFrame([sale])
@@ -140,17 +126,17 @@ class TradeCalculator:
     @staticmethod
     def calculate_position_size(entry_price, units):
         """Calculate position size based on entry price and units"""
-        return float(np.float64(entry_price) * np.float64(units))
+        return float(entry_price * units)
     
     @staticmethod
     def calculate_profit_loss(entry_price, exit_price, units):
         """Calculate profit/loss in dollar amount"""
-        return float(np.float64(exit_price - entry_price) * np.float64(units))
+        return float((exit_price - entry_price) * units)
     
     @staticmethod
     def calculate_win_loss_percentage(entry_price, exit_price):
         """Calculate percentage gain/loss"""
-        return float(((np.float64(exit_price) - np.float64(entry_price)) / np.float64(entry_price)) * 100)
+        return float(((exit_price - entry_price) / entry_price) * 100)
 
     def get_trade_sales_history(self, trade_id):
         """Get sales history for a specific trade"""
@@ -167,8 +153,6 @@ class TradeCalculator:
         if isinstance(data, (list, tuple)):
             return [TradeCalculator.clean_trade_data(item) for item in data]
         elif isinstance(data, dict):
-            return {k: (v.isoformat() if isinstance(v, datetime) else 
-                      float(v) if isinstance(v, np.float64) else
-                      None if pd.isna(v) else v) 
+            return {k: (v.isoformat() if isinstance(v, datetime) else None if pd.isna(v) else v) 
                    for k, v in data.items()}
         return data

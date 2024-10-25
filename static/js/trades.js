@@ -1,5 +1,74 @@
 document.addEventListener('DOMContentLoaded', function() {
-    // ... Previous code until validateInput function ...
+    const tradeForm = document.getElementById('trade-form');
+    const tradesTableBody = document.getElementById('tradesTableBody');
+    const tradeFilter = document.getElementById('tradeFilter');
+    const clearFilterBtn = document.getElementById('clearFilter');
+    const partialSaleModal = new bootstrap.Modal(document.getElementById('partialSaleModal'));
+    const partialSaleForm = document.getElementById('partial-sale-form');
+    const salesHistoryBody = document.getElementById('salesHistoryBody');
+    let trades = [];
+    let currentSort = { column: 'Date', direction: 'desc' };
+
+    class NumberFormatter {
+        constructor() {
+            this.thousandsSeparator = '.';
+            this.decimalSeparator = ',';
+        }
+
+        format(value) {
+            if (value === null || value === undefined || value === '') return '';
+            
+            // Convert to string and clean
+            const cleanValue = String(value).replace(/[^\d,]/g, '');
+            const [integerPart, ...decimalParts] = cleanValue.split(',');
+            const formattedInteger = this.#formatInteger(integerPart);
+            const decimalPart = decimalParts.length > 0 ? decimalParts[decimalParts.length - 1] : '';
+
+            if (String(value).endsWith(',')) {
+                return `${formattedInteger},`;
+            } else if (decimalPart) {
+                return `${formattedInteger},${decimalPart}`;
+            }
+            return formattedInteger;
+        }
+
+        #formatInteger(value) {
+            const trimmedValue = value.replace(/^0+/, '') || '0';
+            return trimmedValue.replace(/\B(?=(\d{3})+(?!\d))/g, this.thousandsSeparator);
+        }
+
+        unformat(value) {
+            if (value === null || value === undefined || value === '') return null;
+            const unformatted = value.replace(/\./g, '').replace(',', '.');
+            const parsed = parseFloat(unformatted);
+            return isNaN(parsed) ? null : parsed;
+        }
+    }
+
+    const numberFormatter = new NumberFormatter();
+
+    // Initialize number inputs
+    document.querySelectorAll('.number-input').forEach(input => {
+        input.addEventListener('input', (e) => {
+            const oldValue = input.value;
+            const formattedValue = numberFormatter.format(input.value);
+            
+            if (oldValue !== formattedValue) {
+                input.value = formattedValue;
+            }
+            validateInput(input);
+        });
+
+        input.addEventListener('keypress', (e) => {
+            if (!/[\d,]/.test(e.key)) {
+                e.preventDefault();
+            }
+        });
+
+        input.addEventListener('blur', () => {
+            validateInput(input);
+        });
+    });
 
     function validateInput(input) {
         input.classList.remove('is-valid', 'is-invalid');
@@ -11,13 +80,11 @@ document.addEventListener('DOMContentLoaded', function() {
         let isValid = true;
         const value = input.value.trim();
 
-        if (input.id === 'market') {
-            // Allow letters, numbers, hyphens, forward slashes, and dots for crypto pairs
-            isValid = /^[A-Za-z0-9\-./]+$/.test(value);
-        } else if (input.classList.contains('number-input')) {
+        if (input.classList.contains('number-input')) {
             const numValue = numberFormatter.unformat(value);
             isValid = numValue !== null && !isNaN(numValue) && numValue > 0;
             
+            // Additional validation for sale units
             if (input.id === 'saleUnits') {
                 const tradeId = document.getElementById('saleTradeId').value;
                 const trade = trades.find(t => t.id === parseInt(tradeId));
@@ -35,28 +102,20 @@ document.addEventListener('DOMContentLoaded', function() {
         return isValid;
     }
 
-    // ... Rest of the existing code ...
+    function validateForm(form) {
+        const inputs = form.querySelectorAll('input[required]');
+        let isValid = true;
 
-    // Update market input event listener
-    const marketInput = document.getElementById('market');
-    if (marketInput) {
-        marketInput.addEventListener('input', (e) => {
-            // Convert to uppercase while typing
-            const value = e.target.value.toUpperCase();
-            e.target.value = value;
-            validateInput(marketInput);
-        });
-
-        marketInput.addEventListener('keypress', (e) => {
-            // Allow only valid characters for market symbols
-            if (!/[A-Za-z0-9\-./]/.test(e.key)) {
-                e.preventDefault();
+        inputs.forEach(input => {
+            if (!validateInput(input)) {
+                isValid = false;
             }
         });
+
+        return isValid;
     }
 
-    // ... Rest of the existing code ...
-
+    // Trade Form Submission
     tradeForm.addEventListener('submit', async function(e) {
         e.preventDefault();
 
@@ -69,11 +128,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const data = {};
         
         for (let [key, value] of formData.entries()) {
-            if (key === 'market') {
-                data[key] = value.toUpperCase();
-            } else {
-                data[key] = numberFormatter.unformat(value);
-            }
+            data[key] = key === 'market' ? value : numberFormatter.unformat(value);
         }
 
         try {
@@ -112,5 +167,247 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // ... Rest of the existing code remains the same ...
+    // Partial Sale Form Submission
+    partialSaleForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        if (!validateForm(partialSaleForm)) {
+            showAlert('Please correct the errors in the form.', 'danger', 'modal');
+            return;
+        }
+
+        const tradeId = document.getElementById('saleTradeId').value;
+        const data = {
+            units: numberFormatter.unformat(document.getElementById('saleUnits').value),
+            exitPrice: numberFormatter.unformat(document.getElementById('saleExitPrice').value)
+        };
+
+        try {
+            const submitButton = partialSaleForm.querySelector('button[type="submit"]');
+            const spinner = submitButton.querySelector('.spinner-border');
+            submitButton.disabled = true;
+            spinner.classList.remove('d-none');
+
+            const response = await fetch(`/sell_units/${tradeId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data),
+            });
+
+            const result = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(result.error || 'Failed to process sale');
+            }
+
+            trades = result.trades;
+            updateTradesTable();
+            updateSalesHistory(result.salesHistory);
+            partialSaleForm.reset();
+            partialSaleModal.hide();
+            showAlert('Units sold successfully!', 'success');
+
+        } catch (error) {
+            console.error('Error processing sale:', error);
+            showAlert(error.message || 'Failed to process sale. Please try again.', 'danger', 'modal');
+        } finally {
+            const submitButton = partialSaleForm.querySelector('button[type="submit"]');
+            const spinner = submitButton.querySelector('.spinner-border');
+            submitButton.disabled = false;
+            spinner.classList.add('d-none');
+        }
+    });
+
+    function showAlert(message, type, location = 'page') {
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+        alertDiv.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        if (location === 'modal') {
+            partialSaleForm.insertAdjacentElement('beforebegin', alertDiv);
+        } else {
+            tradeForm.insertAdjacentElement('beforebegin', alertDiv);
+        }
+        
+        setTimeout(() => alertDiv.remove(), 5000);
+    }
+
+    // Table sorting and filtering
+    document.querySelectorAll('.sortable').forEach(header => {
+        header.addEventListener('click', () => {
+            const column = header.dataset.sort;
+            currentSort.direction = currentSort.column === column && currentSort.direction === 'asc' ? 'desc' : 'asc';
+            currentSort.column = column;
+            updateTradesTable();
+        });
+    });
+
+    tradeFilter.addEventListener('input', updateTradesTable);
+    clearFilterBtn.addEventListener('click', () => {
+        tradeFilter.value = '';
+        updateTradesTable();
+    });
+
+    function updateTradesTable() {
+        const filterValue = tradeFilter.value.toLowerCase();
+        let filteredTrades = trades.filter(trade => 
+            Object.values(trade).some(value => 
+                String(value).toLowerCase().includes(filterValue)
+            )
+        );
+
+        // Sort trades
+        filteredTrades.sort((a, b) => {
+            let aVal = a[currentSort.column];
+            let bVal = b[currentSort.column];
+
+            if (aVal === null || aVal === undefined) return 1;
+            if (bVal === null || bVal === undefined) return -1;
+            if ((aVal === null || aVal === undefined) && (bVal === null || bVal === undefined)) return 0;
+
+            if (typeof aVal === 'string') aVal = aVal.toLowerCase();
+            if (typeof bVal === 'string') bVal = bVal.toLowerCase();
+
+            if (aVal < bVal) return currentSort.direction === 'asc' ? -1 : 1;
+            if (aVal > bVal) return currentSort.direction === 'asc' ? 1 : -1;
+            return 0;
+        });
+
+        tradesTableBody.innerHTML = filteredTrades.map(trade => {
+            const isOpen = trade['Remaining Units'] > 0;
+            const statusBadge = isOpen ? 
+                '<span class="badge bg-success">Open</span>' : 
+                '<span class="badge bg-secondary">Closed</span>';
+            
+            return `
+                <tr data-trade-id="${trade.id}">
+                    <td>${new Date(trade.Date).toLocaleString()}</td>
+                    <td>${trade.Market}</td>
+                    <td>${formatCurrency(trade['Entry Price'])}</td>
+                    <td>${formatNumber(trade.Units)}</td>
+                    <td>${formatNumber(trade['Remaining Units'])}</td>
+                    <td>${formatCurrency(trade['Position Size'])}</td>
+                    <td>${statusBadge}</td>
+                    <td>
+                        <div class="btn-group">
+                            <button class="btn btn-sm btn-outline-info view-history-btn" title="View History">
+                                <i class="bi bi-clock-history me-1"></i>
+                                History
+                            </button>
+                            ${isOpen ? `
+                                <button class="btn btn-sm btn-outline-warning sell-units-btn" title="Sell Units">
+                                    <i class="bi bi-cash-coin me-1"></i>
+                                    Sell
+                                </button>
+                            ` : ''}
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+
+        // Add click handlers for buttons
+        document.querySelectorAll('.view-history-btn').forEach(button => {
+            button.addEventListener('click', (e) => {
+                const tradeId = e.target.closest('tr').dataset.tradeId;
+                openSaleModal(parseInt(tradeId), 'history');
+            });
+        });
+
+        document.querySelectorAll('.sell-units-btn').forEach(button => {
+            button.addEventListener('click', (e) => {
+                const tradeId = e.target.closest('tr').dataset.tradeId;
+                openSaleModal(parseInt(tradeId), 'sell');
+            });
+        });
+    }
+
+    async function openSaleModal(tradeId, mode = 'history') {
+        const trade = trades.find(t => t.id === tradeId);
+        if (!trade) return;
+
+        document.getElementById('saleTradeId').value = tradeId;
+        
+        // Show/hide sale form based on mode and trade status
+        const saleForm = document.getElementById('partial-sale-form');
+        const modalTitle = document.querySelector('.modal-title');
+        
+        if (mode === 'sell' && trade['Remaining Units'] > 0) {
+            saleForm.style.display = 'block';
+            modalTitle.textContent = 'Sell Units';
+            document.getElementById('saleUnits').value = '';
+            document.getElementById('saleExitPrice').value = '';
+        } else {
+            saleForm.style.display = 'none';
+            modalTitle.textContent = 'Trade History';
+        }
+
+        try {
+            const response = await fetch(`/get_sales_history/${tradeId}`);
+            const result = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(result.error || 'Failed to fetch sales history');
+            }
+
+            updateSalesHistory(result.salesHistory);
+            partialSaleModal.show();
+
+        } catch (error) {
+            console.error('Error fetching sales history:', error);
+            showAlert('Failed to load sales history', 'danger');
+        }
+    }
+
+    function updateSalesHistory(salesHistory) {
+        salesHistoryBody.innerHTML = salesHistory.map(sale => `
+            <tr>
+                <td>${new Date(sale.Date).toLocaleString()}</td>
+                <td>${formatNumber(sale['Units Sold'])}</td>
+                <td>${formatCurrency(sale['Exit Price'])}</td>
+                <td class="${getProfitLossClass(sale['Partial P/L'])}">${formatCurrency(sale['Partial P/L'])}</td>
+                <td class="${getProfitLossClass(sale['Partial P/L %'])}">${formatPercentage(sale['Partial P/L %'])}</td>
+            </tr>
+        `).join('');
+
+        if (salesHistory.length === 0) {
+            salesHistoryBody.innerHTML = `
+                <tr>
+                    <td colspan="5" class="text-center">No sales history available</td>
+                </tr>
+            `;
+        }
+    }
+
+    function formatCurrency(value) {
+        if (value === null || value === undefined) return '-';
+        return new Intl.NumberFormat('es-ES', {
+            style: 'currency',
+            currency: 'USD'
+        }).format(value);
+    }
+
+    function formatNumber(value) {
+        if (value === null || value === undefined) return '-';
+        return new Intl.NumberFormat('es-ES').format(value);
+    }
+
+    function formatPercentage(value) {
+        if (value === null || value === undefined) return '-';
+        return new Intl.NumberFormat('es-ES', {
+            style: 'percent',
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        }).format(value / 100);
+    }
+
+    function getProfitLossClass(value) {
+        if (value === null || value === undefined) return '';
+        return value > 0 ? 'text-success' : value < 0 ? 'text-danger' : '';
+    }
 });
