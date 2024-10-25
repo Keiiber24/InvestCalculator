@@ -22,7 +22,7 @@ def index():
 
 @app.route('/trades')
 def trades():
-    return render_template('trades.html', trades=trade_calculator.trades)
+    return render_template('trades.html')
 
 @app.route('/calculate', methods=['POST'])
 def calculate():
@@ -74,12 +74,6 @@ def calculate():
         logger.info(f"Calculation successful: {result}")
         return jsonify(result)
 
-    except KeyError as e:
-        logger.error(f"Missing required field: {str(e)}")
-        return jsonify({"error": f"Missing required field: {str(e)}"}), 400
-    except ValueError as e:
-        logger.error(f"Invalid value: {str(e)}")
-        return jsonify({"error": f"Invalid value: {str(e)}"}), 400
     except Exception as e:
         logger.error(f"Unexpected error: {str(e)}\n{traceback.format_exc()}")
         return jsonify({"error": "An unexpected error occurred"}), 500
@@ -95,7 +89,7 @@ def add_trade():
         logger.info(f"Add trade request received: {data}")
 
         # Validate required fields
-        required_fields = ['market', 'entryPrice', 'units', 'status']
+        required_fields = ['market', 'entryPrice', 'units']
         missing_fields = [field for field in required_fields if field not in data]
         if missing_fields:
             return jsonify({"error": f"Missing required fields: {', '.join(missing_fields)}"}), 400
@@ -105,12 +99,10 @@ def add_trade():
             trade = trade_calculator.add_trade(
                 market=data['market'],
                 entry_price=data['entryPrice'],
-                units=data['units'],
-                exit_price=data.get('exitPrice'),
-                status=data['status']
+                units=data['units']
             )
 
-            # Get trades data ensuring proper JSON serialization
+            # Get trades data
             trades_data = trade_calculator.get_trades_json()
             
             logger.info(f"Trade added successfully: {trade}")
@@ -126,6 +118,58 @@ def add_trade():
     except Exception as e:
         logger.error(f"Unexpected error in add_trade: {str(e)}\n{traceback.format_exc()}")
         return jsonify({"error": "An unexpected error occurred while processing the trade"}), 500
+
+@app.route('/sell_units/<int:trade_id>', methods=['POST'])
+def sell_units(trade_id):
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "No data provided"}), 400
+
+        # Log incoming request
+        logger.info(f"Sell units request received for trade {trade_id}: {data}")
+
+        required_fields = ['units', 'exitPrice']
+        missing_fields = [field for field in required_fields if field not in data]
+        if missing_fields:
+            return jsonify({"error": f"Missing required fields: {', '.join(missing_fields)}"}), 400
+
+        # Process the sale
+        try:
+            result = trade_calculator.sell_units(
+                trade_id=trade_id,
+                units_to_sell=data['units'],
+                exit_price=data['exitPrice']
+            )
+
+            # Get updated trades data and sales history
+            trades_data = trade_calculator.get_trades_json()
+            sales_history = trade_calculator.get_trade_sales_history(trade_id)
+            
+            logger.info(f"Units sold successfully: {result}")
+            return jsonify({
+                'trades': trades_data,
+                'salesHistory': sales_history,
+                'sale': result['sale'],
+                'updatedTrade': result['updated_trade']
+            })
+
+        except ValueError as e:
+            logger.error(f"Sale validation error: {str(e)}")
+            return jsonify({"error": str(e)}), 400
+
+    except Exception as e:
+        logger.error(f"Unexpected error in sell_units: {str(e)}\n{traceback.format_exc()}")
+        return jsonify({"error": "An unexpected error occurred while processing the sale"}), 500
+
+@app.route('/get_sales_history/<int:trade_id>')
+def get_sales_history(trade_id):
+    try:
+        sales_history = trade_calculator.get_trade_sales_history(trade_id)
+        return jsonify({'salesHistory': sales_history})
+    except Exception as e:
+        logger.error(f"Error retrieving sales history: {str(e)}")
+        return jsonify({"error": "Failed to retrieve sales history"}), 500
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)

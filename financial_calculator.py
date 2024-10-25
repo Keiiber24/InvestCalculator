@@ -5,10 +5,20 @@ pd.set_option('display.float_format', lambda x: '%.2f' % x)
 
 class TradeCalculator:
     def __init__(self):
-        columns = pd.Index(['Date', 'Market', 'Status', 'Entry Price', 'Exit Price', 
-                          'Units', 'Position Size', 'Profit/Loss', 'Win/Loss %'])
-        self.trades = pd.DataFrame(columns=columns)
-    
+        # Main trades DataFrame
+        self.trades = pd.DataFrame(columns=[
+            'id', 'Date', 'Market', 'Entry Price', 
+            'Units', 'Remaining Units', 'Position Size'
+        ])
+        
+        # Partial sales history DataFrame
+        self.sales_history = pd.DataFrame(columns=[
+            'trade_id', 'Date', 'Units Sold', 'Exit Price', 
+            'Partial P/L', 'Partial P/L %'
+        ])
+        
+        self.trade_counter = 0
+
     def validate_numeric(self, value, field_name):
         """Validate numeric input"""
         if value is None or value == '':
@@ -23,21 +33,15 @@ class TradeCalculator:
         except (ValueError, TypeError):
             raise ValueError(f"Invalid numeric value for {field_name}")
 
-    def add_trade(self, market, entry_price, units, exit_price=None, status="Open"):
-        """Add a new trade with validation"""
+    def add_trade(self, market, entry_price, units):
+        """Add a new trade with simplified parameters"""
         try:
-            # Validate market
+            # Validate inputs
             if not market or not isinstance(market, str):
                 raise ValueError("Market symbol is required and must be a string")
             
-            # Validate status
-            if status not in ["Open", "Closed"]:
-                raise ValueError("Status must be either 'Open' or 'Closed'")
-            
-            # Validate numeric inputs
             entry_price = self.validate_numeric(entry_price, "Entry price")
             units = self.validate_numeric(units, "Units")
-            exit_price = self.validate_numeric(exit_price, "Exit price") if exit_price else None
             
             if entry_price is None:
                 raise ValueError("Entry price is required and must be a positive number")
@@ -45,64 +49,73 @@ class TradeCalculator:
             if units is None:
                 raise ValueError("Units is required and must be a positive number")
             
-            if status == "Closed":
-                if exit_price is None:
-                    raise ValueError("Exit price is required for closed trades")
-
+            # Generate unique trade ID
+            self.trade_counter += 1
+            trade_id = self.trade_counter
+            
             trade = {
+                'id': trade_id,
                 'Date': datetime.now(),
                 'Market': market.upper(),
-                'Status': status,
                 'Entry Price': entry_price,
-                'Exit Price': exit_price,
-                'Units': units
+                'Units': units,
+                'Remaining Units': units,
+                'Position Size': self.calculate_position_size(entry_price, units)
             }
-            
-            # Calculate position size
-            trade['Position Size'] = self._safe_calculate(
-                self.calculate_position_size,
-                trade['Entry Price'],
-                trade['Units']
-            )
-            
-            # Calculate P/L and Win/Loss % if trade is closed
-            if exit_price is not None:
-                trade['Profit/Loss'] = self._safe_calculate(
-                    self.calculate_profit_loss,
-                    trade['Entry Price'],
-                    trade['Exit Price'],
-                    trade['Units']
-                )
-                trade['Win/Loss %'] = self._safe_calculate(
-                    self.calculate_win_loss_percentage,
-                    trade['Entry Price'],
-                    trade['Exit Price']
-                )
-            else:
-                trade['Profit/Loss'] = None
-                trade['Win/Loss %'] = None
-            
-            # Ensure all NaN values are converted to None for JSON serialization
-            trade = {k: None if pd.isna(v) else v for k, v in trade.items()}
             
             # Add to DataFrame
             new_trade = pd.DataFrame([trade])
             self.trades = pd.concat([self.trades, new_trade], ignore_index=True)
             
-            return trade
+            return self.clean_trade_data(trade)
             
         except Exception as e:
             raise ValueError(f"Error adding trade: {str(e)}")
 
-    def _safe_calculate(self, calc_func, *args):
-        """Safely perform calculations handling None/NaN values"""
+    def sell_units(self, trade_id, units_to_sell, exit_price):
+        """Record a partial sale of units"""
         try:
-            if any(pd.isna(arg) or arg is None for arg in args):
-                return None
-            result = calc_func(*args)
-            return None if pd.isna(result) else result
-        except Exception:
-            return None
+            trade_idx = self.trades.index[self.trades['id'] == trade_id].tolist()
+            if not trade_idx:
+                raise ValueError("Trade not found")
+            
+            trade_idx = trade_idx[0]
+            trade = self.trades.iloc[trade_idx]
+            
+            units_to_sell = self.validate_numeric(units_to_sell, "Units to sell")
+            exit_price = self.validate_numeric(exit_price, "Exit price")
+            
+            if units_to_sell > trade['Remaining Units']:
+                raise ValueError("Cannot sell more units than remaining")
+            
+            # Calculate P/L for this sale
+            partial_pl = self.calculate_profit_loss(trade['Entry Price'], exit_price, units_to_sell)
+            partial_pl_percent = self.calculate_win_loss_percentage(trade['Entry Price'], exit_price)
+            
+            # Record the sale
+            sale = {
+                'trade_id': trade_id,
+                'Date': datetime.now(),
+                'Units Sold': units_to_sell,
+                'Exit Price': exit_price,
+                'Partial P/L': partial_pl,
+                'Partial P/L %': partial_pl_percent
+            }
+            
+            # Update remaining units
+            self.trades.at[trade_idx, 'Remaining Units'] = trade['Remaining Units'] - units_to_sell
+            
+            # Add to sales history
+            new_sale = pd.DataFrame([sale])
+            self.sales_history = pd.concat([self.sales_history, new_sale], ignore_index=True)
+            
+            return {
+                'sale': self.clean_trade_data(sale),
+                'updated_trade': self.clean_trade_data(self.trades.iloc[trade_idx].to_dict())
+            }
+            
+        except Exception as e:
+            raise ValueError(f"Error processing sale: {str(e)}")
 
     @staticmethod
     def calculate_position_size(entry_price, units):
@@ -118,7 +131,22 @@ class TradeCalculator:
     def calculate_win_loss_percentage(entry_price, exit_price):
         """Calculate percentage gain/loss"""
         return float(((exit_price - entry_price) / entry_price) * 100)
-    
+
+    def get_trade_sales_history(self, trade_id):
+        """Get sales history for a specific trade"""
+        sales = self.sales_history[self.sales_history['trade_id'] == trade_id]
+        return self.clean_trade_data(sales.to_dict('records'))
+
     def get_trades_json(self):
         """Get trades data in JSON-serializable format"""
-        return self.trades.replace({pd.NA: None, np.nan: None}).to_dict('records')
+        return self.clean_trade_data(self.trades.to_dict('records'))
+
+    @staticmethod
+    def clean_trade_data(data):
+        """Clean data for JSON serialization"""
+        if isinstance(data, (list, tuple)):
+            return [TradeCalculator.clean_trade_data(item) for item in data]
+        elif isinstance(data, dict):
+            return {k: (v.isoformat() if isinstance(v, datetime) else None if pd.isna(v) else v) 
+                   for k, v in data.items()}
+        return data
