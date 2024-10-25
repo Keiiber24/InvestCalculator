@@ -12,11 +12,22 @@
 <body>
     <div class="container py-4">
         <nav class="navbar navbar-expand-lg mb-4">
-            <div class="container-fluid">
+            <div class="container-fluid px-0">
                 <span class="navbar-brand mb-0 h1 text-gradient">Investment Calculator</span>
-                <div class="navbar-nav">
-                    <a class="nav-link active" href="/">Calculator</a>
-                    <a class="nav-link" href="/trades">Trades</a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
+                    <div class="navbar-nav nav-buttons">
+                        <a class="btn btn-nav active me-2" href="/">
+                            <i class="bi bi-calculator me-1"></i>
+                            Calculator
+                        </a>
+                        <a class="btn btn-nav" href="/trades">
+                            <i class="bi bi-graph-up me-1"></i>
+                            Trades
+                        </a>
+                    </div>
                 </div>
             </div>
         </nav>
@@ -27,6 +38,7 @@
                     <div class="card-body p-4">
                         <form id="calculator-form" class="needs-validation" novalidate>
                             <div class="row g-4">
+                                <!-- Rest of the form content remains the same -->
                                 <!-- Investment Capital Input -->
                                 <div class="col-md-6">
                                     <div class="form-floating">
