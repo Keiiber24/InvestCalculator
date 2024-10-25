@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 from datetime import datetime
+import re
 
 class TradeCalculator:
     def __init__(self):
@@ -17,6 +18,18 @@ class TradeCalculator:
         ])
         
         self.trade_counter = 0
+
+    def validate_market_symbol(self, market):
+        """Validate market symbol with support for crypto pairs"""
+        if not market or not isinstance(market, str):
+            raise ValueError("Market symbol is required")
+        
+        # Allow letters, numbers, hyphens, forward slashes, and dots
+        # Common format for crypto pairs like BTC/USDT or traditional pairs like EUR/USD
+        if not re.match(r'^[A-Za-z0-9\-./]+$', market):
+            raise ValueError("Market symbol can only contain letters, numbers, hyphens, dots, and forward slashes")
+        
+        return market.upper()
 
     def validate_numeric(self, value, field_name):
         """Validate numeric input with high precision"""
@@ -36,9 +49,8 @@ class TradeCalculator:
     def add_trade(self, market, entry_price, units):
         """Add a new trade with simplified parameters"""
         try:
-            # Validate inputs
-            if not market or not isinstance(market, str):
-                raise ValueError("Market symbol is required and must be a string")
+            # Validate market symbol with improved crypto support
+            market = self.validate_market_symbol(market)
             
             entry_price = self.validate_numeric(entry_price, "Entry price")
             units = self.validate_numeric(units, "Units")
@@ -53,13 +65,13 @@ class TradeCalculator:
             self.trade_counter += 1
             trade_id = self.trade_counter
             
-            # Calculate position size based on entry price and units
+            # Calculate initial position size based on entry price and units
             position_size = self.calculate_position_size(entry_price, units)
             
             trade = {
                 'id': trade_id,
                 'Date': datetime.now(),
-                'Market': market.upper(),
+                'Market': market,
                 'Entry Price': entry_price,
                 'Units': units,
                 'Remaining Units': units,
@@ -109,7 +121,9 @@ class TradeCalculator:
             remaining_units = trade['Remaining Units'] - units_to_sell
             self.trades.at[trade_idx, 'Remaining Units'] = remaining_units
             # Update position size based on remaining units
-            self.trades.at[trade_idx, 'Position Size'] = self.calculate_position_size(trade['Entry Price'], remaining_units)
+            self.trades.at[trade_idx, 'Position Size'] = self.calculate_position_size(
+                trade['Entry Price'], remaining_units
+            )
             
             # Add to sales history
             new_sale = pd.DataFrame([sale])
@@ -126,7 +140,6 @@ class TradeCalculator:
     @staticmethod
     def calculate_position_size(entry_price, units):
         """Calculate position size based on entry price and units"""
-        # Use np.float64 for higher precision multiplication
         return float(np.float64(entry_price) * np.float64(units))
     
     @staticmethod
