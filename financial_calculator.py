@@ -151,6 +151,74 @@ class TradeCalculator:
         """Get trades data in JSON-serializable format"""
         return self.clean_trade_data(self.trades.to_dict('records'))
 
+    def get_summary(self):
+        """Get comprehensive trading summary"""
+        if self.trades.empty:
+            return {
+                'total_trades': 0,
+                'open_trades': 0,
+                'closed_trades': 0,
+                'total_profit_loss': 0,
+                'avg_profit_loss_percent': 0,
+                'total_invested': 0,
+                'current_positions_value': 0,
+                'largest_position': 0,
+                'avg_position_size': 0,
+                'win_rate': 0,
+                'trades_by_market': [],
+                'recent_trades': [],
+                'best_performing': None,
+                'worst_performing': None
+            }
+
+        # Calculate basic statistics
+        open_trades = self.trades[self.trades['Remaining Units'] > 0]
+        closed_trades = self.trades[self.trades['Remaining Units'] == 0]
+        
+        # Calculate total P/L from sales
+        total_pl = self.sales_history['Partial P/L'].sum()
+        
+        # Calculate win rate
+        profitable_sales = self.sales_history[self.sales_history['Partial P/L'] > 0]
+        win_rate = len(profitable_sales) / len(self.sales_history) * 100 if not self.sales_history.empty else 0
+        
+        # Group trades by market
+        trades_by_market = self.trades.groupby('Market').agg({
+            'id': 'count',
+            'Position Size': 'sum'
+        }).reset_index()
+        trades_by_market.columns = ['Market', 'Count', 'Total Position']
+        
+        # Get best and worst performing trades based on P/L%
+        if not self.sales_history.empty:
+            best_sale = self.sales_history.loc[self.sales_history['Partial P/L %'].idxmax()]
+            worst_sale = self.sales_history.loc[self.sales_history['Partial P/L %'].idxmin()]
+            
+            best_trade = self.trades[self.trades['id'] == best_sale['trade_id']].iloc[0]
+            worst_trade = self.trades[self.trades['id'] == worst_sale['trade_id']].iloc[0]
+        else:
+            best_trade = None
+            worst_trade = None
+
+        summary = {
+            'total_trades': len(self.trades),
+            'open_trades': len(open_trades),
+            'closed_trades': len(closed_trades),
+            'total_profit_loss': float(total_pl),
+            'avg_profit_loss_percent': float(self.sales_history['Partial P/L %'].mean()) if not self.sales_history.empty else 0,
+            'total_invested': float(self.trades['Position Size'].sum()),
+            'current_positions_value': float(open_trades['Position Size'].sum()),
+            'largest_position': float(self.trades['Position Size'].max()),
+            'avg_position_size': float(self.trades['Position Size'].mean()),
+            'win_rate': float(win_rate),
+            'trades_by_market': trades_by_market.to_dict('records'),
+            'recent_trades': self.clean_trade_data(self.trades.sort_values('Date', ascending=False).head(5).to_dict('records')),
+            'best_performing': self.clean_trade_data(best_trade.to_dict()) if best_trade is not None else None,
+            'worst_performing': self.clean_trade_data(worst_trade.to_dict()) if worst_trade is not None else None
+        }
+        
+        return summary
+
     @staticmethod
     def clean_trade_data(data):
         """Clean data for JSON serialization"""

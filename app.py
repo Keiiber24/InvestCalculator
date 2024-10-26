@@ -24,6 +24,11 @@ def index():
 def trades():
     return render_template('trades.html')
 
+@app.route('/summary')
+def summary():
+    summary_data = trade_calculator.get_summary()
+    return render_template('summary.html', summary=summary_data)
+
 @app.route('/calculate', methods=['POST'])
 def calculate():
     try:
