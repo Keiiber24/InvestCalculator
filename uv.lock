@@ -364,6 +364,7 @@ dependencies = [
     { name = "email-validator" },
     { name = "flask" },
     { name = "flask-sqlalchemy" },
+    { name = "numpy" },
     { name = "pandas" },
     { name = "psycopg2-binary" },
 ]
@@ -373,6 +374,7 @@ requires-dist = [
     { name = "email-validator", specifier = ">=2.2.0" },
     { name = "flask", specifier = ">=3.0.3" },
     { name = "flask-sqlalchemy", specifier = ">=3.1.1" },
+    { name = "numpy", specifier = ">=2.1.2" },
     { name = "pandas", specifier = ">=2.2.3" },
     { name = "psycopg2-binary", specifier = ">=2.9.10" },
 ]

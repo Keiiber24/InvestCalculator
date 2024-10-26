@@ -73,7 +73,9 @@ author = "agent"
 agentRequireRestartOnSave = false
 
 [[workflows.workflow.tasks]]
-task = "packager.installForAll"
+task = "shell.exec"
+args = "python main.py"
+waitForPort = 5000
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"

@@ -1,0 +1,54 @@
+Load the Trade History data:
+
+The data is stored in a file called trade_history.csv.
+This CSV contains fields such as:
+Date and Time: When the trade was logged.
+Ticker: The symbol of the traded asset (e.g., AAPL, TSLA).
+Price: The entry price of the asset when it was bought.
+Total Units: The total number of units purchased.
+Remaining Units: The number of units left unsold.
+Action: Indicates if the trade is Open (still has remaining units) or Closed (all units sold).
+Partial sale data is stored in a History Modal, which shows Units Sold, Sale Price, and P/L.
+Fetch the Latest Price via API:
+
+Use the provided API to fetch the most recent price for any given Ticker.
+Each time the summary is generated, the Last Price should be fetched live for open positions to ensure the Current Market Value is always accurate.
+Example API URL: https://api.example.com/prices/{ticker}
+Replace {ticker} with the asset's ticker symbol (e.g., AAPL for Apple).
+Create the Log Summary Table:
+
+For each trade, extract the following fields from the Trade History:
+Status: If Remaining Units == 0, the trade is Closed; otherwise, it’s Open.
+Ticker: The asset symbol.
+Average Entry Price: The entry price at which the units were bought.
+Units Purchased: The total number of units purchased.
+Remaining Units: The number of units still unsold.
+Action: Whether the trade is Open or Closed.
+Realized P/L: For closed trades, calculate the realized profit or loss from partial/full sales. If the trade is open, this will be 0.
+P/L %: For closed trades, calculate the percentage of profit or loss. For open trades, this will be calculated based on the Current Market Value.
+Total Cost: Calculate the total cost of the trade as:
+Total Cost
+=
+Entry Price
+×
+Units Purchased
+Total Cost=Entry Price×Units Purchased
+Last Price: Fetch this from the API for open trades. Use the closing price from the Trade History for closed trades.
+Current Market Value: For open trades, calculate this as:
+Current Market Value
+=
+Remaining Units
+×
+Last Price (via API)
+Current Market Value=Remaining Units×Last Price (via API)
+Open Date: Extract this from Trade History.
+Close Date: Only for closed trades. Extract the date of the last sale.
+Duration: Calculate the time difference between the Open Date and Close Date.
+Store the Summary in a DataFrame:
+
+After processing each trade, store the results in a pandas DataFrame.
+Output the Log Summary:
+
+The final table should contain the following columns:
+Status, Ticker, Average Entry Price, Units Purchased, Remaining Units, Action, Realized P/L, P/L %, Total Cost, Current Market Value, Last Price, Open Date, Close Date, Duration.
+Save this DataFrame as a CSV file named log_summary.csv.
