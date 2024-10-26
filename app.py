@@ -18,16 +18,16 @@ trade_calculator = TradeCalculator()
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    return render_template('index.html', active_page='calculator')
 
 @app.route('/trades')
 def trades():
-    return render_template('trades.html')
+    return render_template('trades.html', active_page='trades')
 
 @app.route('/summary')
 def summary():
     summary_data = trade_calculator.get_summary()
-    return render_template('summary.html', summary=summary_data)
+    return render_template('summary.html', active_page='summary', summary=summary_data)
 
 @app.route('/calculate', methods=['POST'])
 def calculate():
