@@ -1,44 +1,37 @@
-import { formatCurrency, formatNumber, formatPercentage, getProfitLossClass } from './utils.js';
-
 document.addEventListener('DOMContentLoaded', function() {
     // Format currency values
-    document.querySelectorAll('[data-currency]').forEach(element => {
-        const value = parseFloat(element.dataset.currency);
-        if (!isNaN(value)) {
-            element.textContent = formatCurrency(value);
-            element.classList.add(getProfitLossClass(value));
-        }
-    });
+    function formatCurrency(value) {
+        if (value === null || value === undefined) return '-';
+        return new Intl.NumberFormat('es-ES', {
+            style: 'currency',
+            currency: 'USD',
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        }).format(value);
+    }
+
+    // Format number values
+    function formatNumber(value, isUnits = false) {
+        if (value === null || value === undefined) return '-';
+        return new Intl.NumberFormat('es-ES', {
+            minimumFractionDigits: isUnits ? 8 : 2,
+            maximumFractionDigits: isUnits ? 8 : 2
+        }).format(value);
+    }
 
     // Format percentage values
-    document.querySelectorAll('[data-percentage]').forEach(element => {
-        const value = parseFloat(element.dataset.percentage);
-        if (!isNaN(value)) {
-            element.textContent = formatPercentage(value);
-            element.classList.add(getProfitLossClass(value));
-        }
-    });
+    function formatPercentage(value) {
+        if (value === null || value === undefined) return '-';
+        return new Intl.NumberFormat('es-ES', {
+            style: 'percent',
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        }).format(value / 100);
+    }
 
-    // Format numbers with specific decimal places
-    document.querySelectorAll('[data-number]').forEach(element => {
-        const value = parseFloat(element.dataset.number);
-        if (!isNaN(value)) {
-            const decimals = parseInt(element.dataset.decimals || '2');
-            element.textContent = formatNumber(value, decimals);
-        }
-    });
-
-    // Initialize tooltips
-    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-    tooltipTriggerList.map(function (tooltipTriggerEl) {
-        return new bootstrap.Tooltip(tooltipTriggerEl);
-    });
-
-    // Add refresh button functionality
-    const refreshBtn = document.getElementById('refreshSummary');
-    if (refreshBtn) {
-        refreshBtn.addEventListener('click', function() {
-            window.location.reload();
-        });
+    // Get profit/loss CSS class
+    function getProfitLossClass(value) {
+        if (value === null || value === undefined) return '';
+        return value > 0 ? 'text-success' : value < 0 ? 'text-danger' : '';
     }
 });
