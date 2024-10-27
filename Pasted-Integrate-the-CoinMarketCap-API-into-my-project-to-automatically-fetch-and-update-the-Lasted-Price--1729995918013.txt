@@ -1,0 +1,33 @@
+Integrate the CoinMarketCap API into my project to automatically fetch and update the "Lasted Price" column in the "Trades by Market" table. The goal is to use real-time cryptocurrency prices from CoinMarketCap and display them in this table.
+
+Steps to follow:
+Register for the CoinMarketCap API:
+Ensure that a valid CoinMarketCap API Key is generated from the CoinMarketCap Developer Portal.
+
+CoinMarketCap API Documentation
+Install the required package (if necessary):
+Use a package like requests to send HTTP requests to the CoinMarketCap API.
+
+API Key Setup:
+Securely store the CoinMarketCap API Key as an environment variable in the project. Ensure the key is loaded using os.getenv() or a similar method to protect sensitive information.
+
+Connect to the CoinMarketCap API:
+Establish a connection to the CoinMarketCap API using the API Key. You will need to query the /v1/cryptocurrency/quotes/latest endpoint to fetch real-time prices for each cryptocurrency ticker.
+
+Update the "Lasted Price" column:
+Modify the current table that contains trade history:
+
+For each row in the "Trades by Market" table, use the ticker symbol (e.g., BTC, ETH) to fetch the real-time price from CoinMarketCap.
+Update the "Lasted Price" column with the fetched price for each trading pair.
+Display in "Trades by Market" table:
+Ensure that the updated "Lasted Price" is visible in the "Trades by Market" table within the project.
+
+Save the updated table:
+Once the prices have been updated, save the trade history with the updated "Lasted Price" values to a file (e.g., CSV) or the appropriate data storage system used in the project.
+
+Error handling and testing:
+Ensure that the system gracefully handles any errors, such as:
+
+API request limits or timeouts.
+Invalid ticker symbols.
+After implementing the changes, test the integration by running the script and verifying that the prices in the "Lasted Price" column are updated correctly with real-time data from CoinMarketCap and are properly displayed in the "Trades by Market" table.
