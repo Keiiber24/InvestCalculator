@@ -118,7 +118,7 @@
                                         <td>{{ trade.Market|default('N/A') }}</td>
                                         <td>{{ "%.8f"|format(trade.Units|default(0)) }}</td>
                                         <td>
-                                            {% if trade.get('Remaining Units', 0) > 0 %}
+                                            {% if trade.Remaining_Units > 0 %}
                                             <span class="badge bg-success">Open</span>
                                             {% else %}
                                             <span class="badge bg-secondary">Closed</span>
@@ -151,6 +151,7 @@
                                         <th>Market</th>
                                         <th>Number of Trades</th>
                                         <th>Total Position Value</th>
+                                        <th>Latest Price</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -159,10 +160,11 @@
                                         <td>{{ market.Market|default('N/A') }}</td>
                                         <td>{{ market.Count|default(0) }}</td>
                                         <td data-format="currency">{{ market.get('Total Position', 0) }}</td>
+                                        <td data-format="currency">{{ market.get('Latest Price', 0) }}</td>
                                     </tr>
                                     {% else %}
                                     <tr>
-                                        <td colspan="3" class="text-center">No market data available</td>
+                                        <td colspan="4" class="text-center">No market data available</td>
                                     </tr>
                                     {% endfor %}
                                 </tbody>
@@ -186,9 +188,9 @@
                                 <div class="card bg-success bg-opacity-10">
                                     <div class="card-body">
                                         <h5 class="card-title text-success">Best Performing Trade</h5>
-                                        <p class="mb-1">Market: {{ summary.best_performing.get('Market', 'N/A') }}</p>
-                                        <p class="mb-1">Entry Price: <span data-format="currency">{{ summary.best_performing.get('Entry Price', 0) }}</span></p>
-                                        <p class="mb-0">Units: {{ "%.8f"|format(summary.best_performing.get('Units', 0)) }}</p>
+                                        <p class="mb-1">Market: {{ summary.best_performing.Market|default('N/A') }}</p>
+                                        <p class="mb-1">Entry Price: <span data-format="currency">{{ summary.best_performing['Entry Price']|default(0) }}</span></p>
+                                        <p class="mb-0">Units: {{ "%.8f"|format(summary.best_performing.Units|default(0)) }}</p>
                                     </div>
                                 </div>
                             </div>
@@ -198,9 +200,9 @@
                                 <div class="card bg-danger bg-opacity-10">
                                     <div class="card-body">
                                         <h5 class="card-title text-danger">Worst Performing Trade</h5>
-                                        <p class="mb-1">Market: {{ summary.worst_performing.get('Market', 'N/A') }}</p>
-                                        <p class="mb-1">Entry Price: <span data-format="currency">{{ summary.worst_performing.get('Entry Price', 0) }}</span></p>
-                                        <p class="mb-0">Units: {{ "%.8f"|format(summary.worst_performing.get('Units', 0)) }}</p>
+                                        <p class="mb-1">Market: {{ summary.worst_performing.Market|default('N/A') }}</p>
+                                        <p class="mb-1">Entry Price: <span data-format="currency">{{ summary.worst_performing['Entry Price']|default(0) }}</span></p>
+                                        <p class="mb-0">Units: {{ "%.8f"|format(summary.worst_performing.Units|default(0)) }}</p>
                                     </div>
                                 </div>
                             </div>

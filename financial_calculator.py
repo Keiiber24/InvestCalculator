@@ -1,6 +1,8 @@
 import pandas as pd
 import numpy as np
 from datetime import datetime
+import os
+import requests
 pd.set_option('display.float_format', lambda x: '%.2f' % x)
 
 class TradeCalculator:
@@ -27,6 +29,51 @@ class TradeCalculator:
         })
         
         self.trade_counter = 0
+        self.api_key = os.getenv('COINMARKETCAP_API_KEY')
+
+    def fetch_latest_prices(self, symbols):
+        """Fetch latest prices from CoinMarketCap API"""
+        if not symbols:
+            return {}
+        
+        # Convert trading pair symbols to CoinMarketCap format
+        formatted_symbols = []
+        for symbol in symbols:
+            # Remove /USD or /USDT suffix and convert to uppercase
+            base_symbol = symbol.split('/')[0].upper()
+            formatted_symbols.append(base_symbol)
+        
+        symbol_string = ','.join(formatted_symbols)
+        
+        url = 'https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest'
+        parameters = {
+            'symbol': symbol_string,
+            'convert': 'USD'
+        }
+        headers = {
+            'X-CMC_PRO_API_KEY': self.api_key,
+            'Accept': 'application/json'
+        }
+
+        try:
+            response = requests.get(url, headers=headers, params=parameters)
+            data = response.json()
+            
+            if 'data' not in data:
+                return {}
+                
+            prices = {}
+            for symbol in formatted_symbols:
+                if symbol in data['data']:
+                    price = data['data'][symbol]['quote']['USD']['price']
+                    # Reconstruct original trading pair format
+                    original_symbol = next(s for s in symbols if s.startswith(symbol))
+                    prices[original_symbol] = price
+                    
+            return prices
+        except Exception as e:
+            print(f"Error fetching prices: {str(e)}")
+            return {}
 
     def validate_numeric(self, value, field_name):
         """Validate numeric input"""
@@ -190,19 +237,37 @@ class TradeCalculator:
         open_trades = self.trades[self.trades['Remaining Units'] > 0]
         closed_trades = self.trades[self.trades['Remaining Units'] == 0]
         
+        # Fetch latest prices for open trades
+        open_market_symbols = open_trades['Market'].unique().tolist()
+        latest_prices = self.fetch_latest_prices(open_market_symbols)
+        
         # Calculate total P/L from sales
         total_pl = self.sales_history['Partial P/L'].sum()
+        
+        # Add unrealized P/L from open positions using latest prices
+        for _, trade in open_trades.iterrows():
+            if trade['Market'] in latest_prices:
+                current_price = latest_prices[trade['Market']]
+                unrealized_pl = self.calculate_profit_loss(
+                    trade['Entry Price'],
+                    current_price,
+                    trade['Remaining Units']
+                )
+                total_pl += unrealized_pl
         
         # Calculate win rate
         profitable_sales = self.sales_history[self.sales_history['Partial P/L'] > 0]
         win_rate = len(profitable_sales) / len(self.sales_history) * 100 if not self.sales_history.empty else 0
         
-        # Group trades by market
+        # Group trades by market and include latest prices
         trades_by_market = self.trades.groupby('Market').agg({
             'id': 'count',
             'Position Size': 'sum'
         }).reset_index()
         trades_by_market.columns = ['Market', 'Count', 'Total Position']
+        
+        # Add Latest Price column
+        trades_by_market['Latest Price'] = trades_by_market['Market'].map(latest_prices)
         
         # Get best and worst performing trades based on P/L%
         if not self.sales_history.empty:
