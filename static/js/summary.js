@@ -6,10 +6,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const value = parseFloat(element.dataset.currency);
         if (!isNaN(value)) {
             element.textContent = formatCurrency(value);
-            const profitLossClass = getProfitLossClass(value);
-            if (profitLossClass) {  // Only add class if it's not empty
-                element.classList.add(profitLossClass);
-            }
+            element.classList.add(getProfitLossClass(value));
         }
     });
 
@@ -18,10 +15,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const value = parseFloat(element.dataset.percentage);
         if (!isNaN(value)) {
             element.textContent = formatPercentage(value);
-            const profitLossClass = getProfitLossClass(value);
-            if (profitLossClass) {  // Only add class if it's not empty
-                element.classList.add(profitLossClass);
-            }
+            element.classList.add(getProfitLossClass(value));
         }
     });
 
@@ -34,13 +28,11 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Initialize tooltips if Bootstrap is available
-    if (typeof bootstrap !== 'undefined') {
-        const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
-        tooltipTriggerList.forEach(tooltipTriggerEl => {
-            new bootstrap.Tooltip(tooltipTriggerEl);
-        });
-    }
+    // Initialize tooltips
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
 
     // Add refresh button functionality
     const refreshBtn = document.getElementById('refreshSummary');
