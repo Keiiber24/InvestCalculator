@@ -1,79 +1,220 @@
 <!DOCTYPE html>
 <html lang="en">
-<!-- ... [head section remains the same] ... -->
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trading Summary - Investment Calculator</title>
+    <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/custom.css') }}">
+</head>
+<body>
+    <div class="container py-4">
+        {% include 'partials/navbar.html' %}
 
-<style>
-    .latest-price {
-        position: relative;
-    }
-    
-    .latest-price.loading::after {
-        content: '';
-        position: absolute;
-        width: 16px;
-        height: 16px;
-        right: 8px;
-        top: 50%;
-        transform: translateY(-50%);
-        border: 2px solid var(--bs-warning);
-        border-radius: 50%;
-        border-top-color: transparent;
-        animation: spin 1s linear infinite;
-    }
-    
-    .price-updated {
-        animation: flash 1s;
-    }
-    
-    @keyframes spin {
-        to { transform: translateY(-50%) rotate(360deg); }
-    }
-    
-    @keyframes flash {
-        0% { background-color: transparent; }
-        50% { background-color: rgba(241, 196, 15, 0.2); }
-        100% { background-color: transparent; }
-    }
-</style>
-
-<!-- ... [other sections remain the same until trades by market table] ... -->
-
-<!-- Trades by Market -->
-<div class="col-12">
-    <div class="card shadow-lg border-0">
-        <div class="card-header bg-primary">
-            <h2 class="card-title h4 mb-0 text-yellow">Trades by Market</h2>
-        </div>
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table mb-0" id="trades-by-market-table">
-                    <thead>
-                        <tr>
-                            <th>Market</th>
-                            <th>Number of Trades</th>
-                            <th>Total Position Value</th>
-                            <th>Latest Price</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for market in summary.trades_by_market %}
-                        <tr>
-                            <td>{{ market.Market|default('N/A') }}</td>
-                            <td>{{ market.Count|default(0) }}</td>
-                            <td data-format="currency">{{ market.get('Total Position', 0) }}</td>
-                            <td class="latest-price" data-format="currency">{{ market.get('Latest Price', 'N/A') }}</td>
-                        </tr>
-                        {% else %}
-                        <tr>
-                            <td colspan="4" class="text-center">No market data available</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+        <div class="row g-4">
+            <!-- Portfolio Overview -->
+            <div class="col-12">
+                <div class="card shadow-lg border-0">
+                    <div class="card-header bg-primary">
+                        <h2 class="card-title h4 mb-0 text-yellow">Portfolio Overview</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-4">
+                            <div class="col-md-3">
+                                <div class="d-flex align-items-center">
+                                    <i class="bi bi-graph-up-arrow fs-3 text-warning me-3"></i>
+                                    <div>
+                                        <h6 class="text-muted mb-1">Total Trades</h6>
+                                        <h3 class="mb-0">{{ summary.total_trades|default(0) }}</h3>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="d-flex align-items-center">
+                                    <i class="bi bi-clock-history fs-3 text-warning me-3"></i>
+                                    <div>
+                                        <h6 class="text-muted mb-1">Open/Closed</h6>
+                                        <h3 class="mb-0">{{ summary.open_trades|default(0) }}/{{ summary.closed_trades|default(0) }}</h3>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="d-flex align-items-center">
+                                    <i class="bi bi-trophy fs-3 text-warning me-3"></i>
+                                    <div>
+                                        <h6 class="text-muted mb-1">Win Rate</h6>
+                                        <h3 class="mb-0" data-format="percentage">{{ summary.win_rate|default(0) }}</h3>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="d-flex align-items-center">
+                                    <i class="bi bi-cash-stack fs-3 text-warning me-3"></i>
+                                    <div>
+                                        <h6 class="text-muted mb-1">Total P/L</h6>
+                                        <h3 class="mb-0" data-format="currency" data-color-value="{{ summary.total_profit_loss|default(0) }}">
+                                            {{ summary.total_profit_loss|default(0) }}
+                                        </h3>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
+
+            <!-- Position Analysis -->
+            <div class="col-md-6">
+                <div class="card shadow-lg border-0 h-100">
+                    <div class="card-header bg-primary">
+                        <h2 class="card-title h4 mb-0 text-yellow">Position Analysis</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-4">
+                            <div class="col-12">
+                                <h6 class="text-muted">Total Invested</h6>
+                                <h4 data-format="currency">{{ summary.total_invested|default(0) }}</h4>
+                            </div>
+                            <div class="col-12">
+                                <h6 class="text-muted">Current Positions Value</h6>
+                                <h4 data-format="currency">{{ summary.current_positions_value|default(0) }}</h4>
+                            </div>
+                            <div class="col-12">
+                                <h6 class="text-muted">Average Position Size</h6>
+                                <h4 data-format="currency">{{ summary.avg_position_size|default(0) }}</h4>
+                            </div>
+                            <div class="col-12">
+                                <h6 class="text-muted">Largest Position</h6>
+                                <h4 data-format="currency">{{ summary.largest_position|default(0) }}</h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Trades -->
+            <div class="col-md-6">
+                <div class="card shadow-lg border-0 h-100">
+                    <div class="card-header bg-primary">
+                        <h2 class="card-title h4 mb-0 text-yellow">Recent Trades</h2>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Market</th>
+                                        <th>Units</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for trade in summary.recent_trades %}
+                                    <tr>
+                                        <td>{{ trade.Date[:10] if trade.Date else 'N/A' }}</td>
+                                        <td>{{ trade.Market|default('N/A') }}</td>
+                                        <td>{{ "%.8f"|format(trade.Units|default(0)) }}</td>
+                                        <td>
+                                            {% if trade.Remaining_Units > 0 %}
+                                            <span class="badge bg-success">Open</span>
+                                            {% else %}
+                                            <span class="badge bg-secondary">Closed</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% else %}
+                                    <tr>
+                                        <td colspan="4" class="text-center">No trades available</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Trades by Market -->
+            <div class="col-12">
+                <div class="card shadow-lg border-0">
+                    <div class="card-header bg-primary">
+                        <h2 class="card-title h4 mb-0 text-yellow">Trades by Market</h2>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Market</th>
+                                        <th>Number of Trades</th>
+                                        <th>Total Position Value</th>
+                                        <th>Latest Price</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for market in summary.trades_by_market %}
+                                    <tr>
+                                        <td>{{ market.Market|default('N/A') }}</td>
+                                        <td>{{ market.Count|default(0) }}</td>
+                                        <td data-format="currency">{{ market.get('Total Position', 0) }}</td>
+                                        <td data-format="currency">{{ market.get('Latest Price', 0) }}</td>
+                                    </tr>
+                                    {% else %}
+                                    <tr>
+                                        <td colspan="4" class="text-center">No market data available</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Performance Highlights -->
+            {% if summary.best_performing or summary.worst_performing %}
+            <div class="col-12">
+                <div class="card shadow-lg border-0">
+                    <div class="card-header bg-primary">
+                        <h2 class="card-title h4 mb-0 text-yellow">Performance Highlights</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-4">
+                            {% if summary.best_performing %}
+                            <div class="col-md-6">
+                                <div class="card bg-success bg-opacity-10">
+                                    <div class="card-body">
+                                        <h5 class="card-title text-success">Best Performing Trade</h5>
+                                        <p class="mb-1">Market: {{ summary.best_performing.Market|default('N/A') }}</p>
+                                        <p class="mb-1">Entry Price: <span data-format="currency">{{ summary.best_performing['Entry Price']|default(0) }}</span></p>
+                                        <p class="mb-0">Units: {{ "%.8f"|format(summary.best_performing.Units|default(0)) }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+                            {% if summary.worst_performing %}
+                            <div class="col-md-6">
+                                <div class="card bg-danger bg-opacity-10">
+                                    <div class="card-body">
+                                        <h5 class="card-title text-danger">Worst Performing Trade</h5>
+                                        <p class="mb-1">Market: {{ summary.worst_performing.Market|default('N/A') }}</p>
+                                        <p class="mb-1">Entry Price: <span data-format="currency">{{ summary.worst_performing['Entry Price']|default(0) }}</span></p>
+                                        <p class="mb-0">Units: {{ "%.8f"|format(summary.worst_performing.Units|default(0)) }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
         </div>
     </div>
-</div>
 
-<!-- ... [rest of the template remains the same] ... -->
+    <script src="{{ url_for('static', filename='js/summary.js') }}"></script>
+</body>
 </html>
