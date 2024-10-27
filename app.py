@@ -26,8 +26,25 @@ def trades():
 
 @app.route('/summary')
 def summary():
-    summary_data = trade_calculator.get_summary()
-    return render_template('summary.html', active_page='summary', summary=summary_data)
+    try:
+        summary_data = trade_calculator.get_summary()
+        if summary_data is None:
+            logger.error("Failed to generate summary data")
+            return render_template('error.html', error="Failed to generate summary data"), 500
+
+        # Format numerical values for display
+        for key in ['total_profit_loss', 'total_invested', 'current_positions_value', 'avg_position_size', 'largest_position']:
+            if key in summary_data:
+                summary_data[key] = round(float(summary_data[key]), 2)
+
+        # Ensure win_rate is properly formatted
+        if 'win_rate' in summary_data:
+            summary_data['win_rate'] = round(float(summary_data['win_rate']), 1)
+
+        return render_template('summary.html', active_page='summary', summary=summary_data)
+    except Exception as e:
+        logger.error(f"Error in summary route: {str(e)}\n{traceback.format_exc()}")
+        return render_template('error.html', error="An unexpected error occurred"), 500
 
 @app.route('/calculate', methods=['POST'])
 def calculate():
@@ -88,29 +105,31 @@ def add_trade():
     try:
         data = request.get_json()
         if not data:
-            return jsonify({"error": "No data provided"}), 400
+            # If no data is provided, return current trades list
+            trades_data = trade_calculator.get_trades_json()
+            return jsonify({'trades': trades_data})
 
         # Log incoming request
         logger.info(f"Add trade request received: {data}")
 
         # Validate required fields
         required_fields = ['market', 'entryPrice', 'units']
-        missing_fields = [field for field in required_fields if field not in data]
-        if missing_fields:
-            return jsonify({"error": f"Missing required fields: {', '.join(missing_fields)}"}), 400
+        if not all(field in data for field in required_fields):
+            missing = [field for field in required_fields if field not in data]
+            return jsonify({"error": f"Missing required fields: {', '.join(missing)}"}), 400
 
-        # Add the trade using the calculator
         try:
+            # Add the trade
             trade = trade_calculator.add_trade(
-                market=data['market'],
-                entry_price=data['entryPrice'],
-                units=data['units']
+                market=str(data['market']).strip(),
+                entry_price=float(data['entryPrice']),
+                units=float(data['units'])
             )
-
-            # Get trades data
-            trades_data = trade_calculator.get_trades_json()
             
-            logger.info(f"Trade added successfully: {trade}")
+            if trade is None:
+                return jsonify({"error": "Failed to add trade"}), 500
+
+            trades_data = trade_calculator.get_trades_json()
             return jsonify({
                 'trades': trades_data,
                 'newTrade': trade
@@ -122,7 +141,7 @@ def add_trade():
 
     except Exception as e:
         logger.error(f"Unexpected error in add_trade: {str(e)}\n{traceback.format_exc()}")
-        return jsonify({"error": "An unexpected error occurred while processing the trade"}), 500
+        return jsonify({"error": "An unexpected error occurred"}), 500
 
 @app.route('/sell_units/<int:trade_id>', methods=['POST'])
 def sell_units(trade_id):
@@ -135,23 +154,23 @@ def sell_units(trade_id):
         logger.info(f"Sell units request received for trade {trade_id}: {data}")
 
         required_fields = ['units', 'exitPrice']
-        missing_fields = [field for field in required_fields if field not in data]
-        if missing_fields:
-            return jsonify({"error": f"Missing required fields: {', '.join(missing_fields)}"}), 400
+        if not all(field in data for field in required_fields):
+            missing = [field for field in required_fields if field not in data]
+            return jsonify({"error": f"Missing required fields: {', '.join(missing)}"}), 400
 
-        # Process the sale
         try:
             result = trade_calculator.sell_units(
                 trade_id=trade_id,
-                units_to_sell=data['units'],
-                exit_price=data['exitPrice']
+                units_to_sell=float(data['units']),
+                exit_price=float(data['exitPrice'])
             )
 
-            # Get updated trades data and sales history
+            if result is None:
+                return jsonify({"error": "Failed to process sale"}), 500
+
             trades_data = trade_calculator.get_trades_json()
             sales_history = trade_calculator.get_trade_sales_history(trade_id)
             
-            logger.info(f"Units sold successfully: {result}")
             return jsonify({
                 'trades': trades_data,
                 'salesHistory': sales_history,
@@ -165,7 +184,7 @@ def sell_units(trade_id):
 
     except Exception as e:
         logger.error(f"Unexpected error in sell_units: {str(e)}\n{traceback.format_exc()}")
-        return jsonify({"error": "An unexpected error occurred while processing the sale"}), 500
+        return jsonify({"error": "An unexpected error occurred"}), 500
 
 @app.route('/get_sales_history/<int:trade_id>')
 def get_sales_history(trade_id):
@@ -177,4 +196,5 @@ def get_sales_history(trade_id):
         return jsonify({"error": "Failed to retrieve sales history"}), 500
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port)
