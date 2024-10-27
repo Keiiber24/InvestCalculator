@@ -51,17 +51,20 @@ document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('[data-format]').forEach(element => {
         try {
             const format = element.dataset.format;
-            const value = parseFloat(element.textContent);
+            const value = element.textContent.trim();
+            if (!value) return;
+
+            const numValue = parseFloat(value.replace(/[^-\d.]/g, ''));
             
             switch (format) {
                 case 'currency':
-                    element.textContent = formatCurrency(value);
+                    element.textContent = formatCurrency(numValue);
                     break;
                 case 'number':
-                    element.textContent = formatNumber(value);
+                    element.textContent = formatNumber(numValue);
                     break;
                 case 'percentage':
-                    element.textContent = formatPercentage(value);
+                    element.textContent = formatPercentage(numValue);
                     break;
                 default:
                     console.warn('Unknown format type:', format);
@@ -71,12 +74,26 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Apply color classes based on values
+    // Apply color classes based on values with improved error handling
     document.querySelectorAll('[data-color-value]').forEach(element => {
         try {
+            // Only proceed if the data-color-value attribute exists and has a value
+            if (!element.hasAttribute('data-color-value') || 
+                element.dataset.colorValue === undefined || 
+                element.dataset.colorValue === '') {
+                return;
+            }
+
             const value = parseFloat(element.dataset.colorValue);
             if (!isNaN(value)) {
-                element.classList.add(value > 0 ? 'text-success' : value < 0 ? 'text-danger' : '');
+                // Remove existing color classes first
+                element.classList.remove('text-success', 'text-danger');
+                // Add appropriate color class
+                if (value > 0) {
+                    element.classList.add('text-success');
+                } else if (value < 0) {
+                    element.classList.add('text-danger');
+                }
             }
         } catch (error) {
             console.error('Error applying color class:', error);
