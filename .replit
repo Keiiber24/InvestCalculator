@@ -13,10 +13,6 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
-args = "Start Flask App"
-
-[[workflows.workflow.tasks]]
-task = "workflow.run"
 args = "Investment Calculator"
 
 [[workflows.workflow.tasks]]
@@ -26,18 +22,6 @@ args = "Test Calculator"
 [[workflows.workflow.tasks]]
 task = "workflow.run"
 args = "Flask Server"
-
-[[workflows.workflow]]
-name = "Start Flask App"
-author = "agent"
-
-[workflows.workflow.metadata]
-agentRequireRestartOnSave = false
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python main.py"
-waitForPort = 5000
 
 [[workflows.workflow]]
 name = "Investment Calculator"
@@ -71,11 +55,6 @@ author = "agent"
 
 [workflows.workflow.metadata]
 agentRequireRestartOnSave = false
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python main.py"
-waitForPort = 5000
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"

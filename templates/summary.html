@@ -11,34 +11,10 @@
 </head>
 <body>
     <div class="container py-4">
-        <!-- Navigation -->
-        <nav class="navbar navbar-expand-lg mb-4">
-            <div class="container-fluid px-0">
-                <span class="navbar-brand mb-0 h1 text-gradient">Investment Calculator</span>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
-                    <div class="navbar-nav nav-buttons">
-                        <a class="btn btn-nav me-2" href="/">
-                            <i class="bi bi-calculator me-1"></i>
-                            Calculator
-                        </a>
-                        <a class="btn btn-nav me-2" href="/trades">
-                            <i class="bi bi-graph-up me-1"></i>
-                            Trades
-                        </a>
-                        <a class="btn btn-nav active" href="/summary">
-                            <i class="bi bi-bar-chart me-1"></i>
-                            Summary
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </nav>
+        {% include 'partials/navbar.html' %}
 
         <div class="row g-4">
-            <!-- Overview Cards -->
+            <!-- Portfolio Overview -->
             <div class="col-12">
                 <div class="card shadow-lg border-0">
                     <div class="card-header bg-primary">
@@ -46,44 +22,40 @@
                     </div>
                     <div class="card-body">
                         <div class="row g-4">
-                            <!-- Total Trades -->
                             <div class="col-md-3">
                                 <div class="d-flex align-items-center">
                                     <i class="bi bi-graph-up-arrow fs-3 text-warning me-3"></i>
                                     <div>
                                         <h6 class="text-muted mb-1">Total Trades</h6>
-                                        <h3 class="mb-0">{{ summary.total_trades }}</h3>
+                                        <h3 class="mb-0">{{ summary.total_trades|default(0) }}</h3>
                                     </div>
                                 </div>
                             </div>
-                            <!-- Open/Closed Trades -->
                             <div class="col-md-3">
                                 <div class="d-flex align-items-center">
                                     <i class="bi bi-clock-history fs-3 text-warning me-3"></i>
                                     <div>
                                         <h6 class="text-muted mb-1">Open/Closed</h6>
-                                        <h3 class="mb-0">{{ summary.open_trades }}/{{ summary.closed_trades }}</h3>
+                                        <h3 class="mb-0">{{ summary.open_trades|default(0) }}/{{ summary.closed_trades|default(0) }}</h3>
                                     </div>
                                 </div>
                             </div>
-                            <!-- Win Rate -->
                             <div class="col-md-3">
                                 <div class="d-flex align-items-center">
                                     <i class="bi bi-trophy fs-3 text-warning me-3"></i>
                                     <div>
                                         <h6 class="text-muted mb-1">Win Rate</h6>
-                                        <h3 class="mb-0">{{ "%.1f"|format(summary.win_rate) }}%</h3>
+                                        <h3 class="mb-0" data-format="percentage">{{ summary.win_rate|default(0) }}</h3>
                                     </div>
                                 </div>
                             </div>
-                            <!-- Total P/L -->
                             <div class="col-md-3">
                                 <div class="d-flex align-items-center">
                                     <i class="bi bi-cash-stack fs-3 text-warning me-3"></i>
                                     <div>
                                         <h6 class="text-muted mb-1">Total P/L</h6>
-                                        <h3 class="mb-0 {{ 'text-success' if summary.total_profit_loss > 0 else 'text-danger' if summary.total_profit_loss < 0 else '' }}">
-                                            ${{ "%.2f"|format(summary.total_profit_loss) }}
+                                        <h3 class="mb-0" data-format="currency" data-color-value="{{ summary.total_profit_loss|default(0) }}">
+                                            {{ summary.total_profit_loss|default(0) }}
                                         </h3>
                                     </div>
                                 </div>
@@ -101,25 +73,21 @@
                     </div>
                     <div class="card-body">
                         <div class="row g-4">
-                            <!-- Total Invested -->
                             <div class="col-12">
                                 <h6 class="text-muted">Total Invested</h6>
-                                <h4>${{ "%.2f"|format(summary.total_invested) }}</h4>
+                                <h4 data-format="currency">{{ summary.total_invested|default(0) }}</h4>
                             </div>
-                            <!-- Current Positions Value -->
                             <div class="col-12">
                                 <h6 class="text-muted">Current Positions Value</h6>
-                                <h4>${{ "%.2f"|format(summary.current_positions_value) }}</h4>
+                                <h4 data-format="currency">{{ summary.current_positions_value|default(0) }}</h4>
                             </div>
-                            <!-- Average Position Size -->
                             <div class="col-12">
                                 <h6 class="text-muted">Average Position Size</h6>
-                                <h4>${{ "%.2f"|format(summary.avg_position_size) }}</h4>
+                                <h4 data-format="currency">{{ summary.avg_position_size|default(0) }}</h4>
                             </div>
-                            <!-- Largest Position -->
                             <div class="col-12">
                                 <h6 class="text-muted">Largest Position</h6>
-                                <h4>${{ "%.2f"|format(summary.largest_position) }}</h4>
+                                <h4 data-format="currency">{{ summary.largest_position|default(0) }}</h4>
                             </div>
                         </div>
                     </div>
@@ -146,11 +114,11 @@
                                 <tbody>
                                     {% for trade in summary.recent_trades %}
                                     <tr>
-                                        <td>{{ trade.Date[:10] }}</td>
-                                        <td>{{ trade.Market }}</td>
-                                        <td>{{ "%.8f"|format(trade.Units) }}</td>
+                                        <td>{{ trade.Date[:10] if trade.Date else 'N/A' }}</td>
+                                        <td>{{ trade.Market|default('N/A') }}</td>
+                                        <td>{{ "%.8f"|format(trade.Units|default(0)) }}</td>
                                         <td>
-                                            {% if trade.Remaining_Units > 0 %}
+                                            {% if trade.get('Remaining Units', 0) > 0 %}
                                             <span class="badge bg-success">Open</span>
                                             {% else %}
                                             <span class="badge bg-secondary">Closed</span>
@@ -188,9 +156,9 @@
                                 <tbody>
                                     {% for market in summary.trades_by_market %}
                                     <tr>
-                                        <td>{{ market.Market }}</td>
-                                        <td>{{ market.Count }}</td>
-                                        <td>${{ "%.2f"|format(market['Total Position']) }}</td>
+                                        <td>{{ market.Market|default('N/A') }}</td>
+                                        <td>{{ market.Count|default(0) }}</td>
+                                        <td data-format="currency">{{ market.get('Total Position', 0) }}</td>
                                     </tr>
                                     {% else %}
                                     <tr>
@@ -204,7 +172,7 @@
                 </div>
             </div>
 
-            <!-- Best/Worst Performing -->
+            <!-- Performance Highlights -->
             {% if summary.best_performing or summary.worst_performing %}
             <div class="col-12">
                 <div class="card shadow-lg border-0">
@@ -218,9 +186,9 @@
                                 <div class="card bg-success bg-opacity-10">
                                     <div class="card-body">
                                         <h5 class="card-title text-success">Best Performing Trade</h5>
-                                        <p class="mb-1">Market: {{ summary.best_performing.Market }}</p>
-                                        <p class="mb-1">Entry Price: ${{ "%.2f"|format(summary.best_performing['Entry Price']) }}</p>
-                                        <p class="mb-0">Units: {{ "%.8f"|format(summary.best_performing.Units) }}</p>
+                                        <p class="mb-1">Market: {{ summary.best_performing.get('Market', 'N/A') }}</p>
+                                        <p class="mb-1">Entry Price: <span data-format="currency">{{ summary.best_performing.get('Entry Price', 0) }}</span></p>
+                                        <p class="mb-0">Units: {{ "%.8f"|format(summary.best_performing.get('Units', 0)) }}</p>
                                     </div>
                                 </div>
                             </div>
@@ -230,9 +198,9 @@
                                 <div class="card bg-danger bg-opacity-10">
                                     <div class="card-body">
                                         <h5 class="card-title text-danger">Worst Performing Trade</h5>
-                                        <p class="mb-1">Market: {{ summary.worst_performing.Market }}</p>
-                                        <p class="mb-1">Entry Price: ${{ "%.2f"|format(summary.worst_performing['Entry Price']) }}</p>
-                                        <p class="mb-0">Units: {{ "%.8f"|format(summary.worst_performing.Units) }}</p>
+                                        <p class="mb-1">Market: {{ summary.worst_performing.get('Market', 'N/A') }}</p>
+                                        <p class="mb-1">Entry Price: <span data-format="currency">{{ summary.worst_performing.get('Entry Price', 0) }}</span></p>
+                                        <p class="mb-0">Units: {{ "%.8f"|format(summary.worst_performing.get('Units', 0)) }}</p>
                                     </div>
                                 </div>
                             </div>
@@ -244,5 +212,7 @@
             {% endif %}
         </div>
     </div>
+
+    <script src="{{ url_for('static', filename='js/summary.js') }}"></script>
 </body>
 </html>

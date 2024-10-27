@@ -5,17 +5,26 @@ pd.set_option('display.float_format', lambda x: '%.2f' % x)
 
 class TradeCalculator:
     def __init__(self):
-        # Main trades DataFrame
-        self.trades = pd.DataFrame(columns=[
-            'id', 'Date', 'Market', 'Entry Price', 
-            'Units', 'Remaining Units', 'Position Size'
-        ])
+        # Main trades DataFrame with proper dtypes
+        self.trades = pd.DataFrame({
+            'id': pd.Series(dtype='int64'),
+            'Date': pd.Series(dtype='datetime64[ns]'),
+            'Market': pd.Series(dtype='string'),
+            'Entry Price': pd.Series(dtype='float64'),
+            'Units': pd.Series(dtype='float64'),
+            'Remaining Units': pd.Series(dtype='float64'),
+            'Position Size': pd.Series(dtype='float64')
+        })
         
-        # Partial sales history DataFrame
-        self.sales_history = pd.DataFrame(columns=[
-            'trade_id', 'Date', 'Units Sold', 'Exit Price', 
-            'Partial P/L', 'Partial P/L %'
-        ])
+        # Partial sales history DataFrame with proper dtypes
+        self.sales_history = pd.DataFrame({
+            'trade_id': pd.Series(dtype='int64'),
+            'Date': pd.Series(dtype='datetime64[ns]'),
+            'Units Sold': pd.Series(dtype='float64'),
+            'Exit Price': pd.Series(dtype='float64'),
+            'Partial P/L': pd.Series(dtype='float64'),
+            'Partial P/L %': pd.Series(dtype='float64')
+        })
         
         self.trade_counter = 0
 
@@ -56,21 +65,25 @@ class TradeCalculator:
             # Calculate initial position size based on remaining units
             position_size = self.calculate_position_size(entry_price, units)
             
-            trade = {
-                'id': trade_id,
-                'Date': datetime.now(),
-                'Market': market.upper(),
-                'Entry Price': entry_price,
-                'Units': units,
-                'Remaining Units': units,
-                'Position Size': position_size
-            }
+            # Create new trade with proper types
+            new_trade = pd.DataFrame({
+                'id': [trade_id],
+                'Date': [datetime.now()],
+                'Market': [market.upper()],
+                'Entry Price': [entry_price],
+                'Units': [units],
+                'Remaining Units': [units],
+                'Position Size': [position_size]
+            })
             
-            # Add to DataFrame
-            new_trade = pd.DataFrame([trade])
-            self.trades = pd.concat([self.trades, new_trade], ignore_index=True)
+            # Concatenate with explicit dtypes
+            self.trades = pd.concat(
+                [self.trades, new_trade],
+                ignore_index=True
+            ).astype(self.trades.dtypes.to_dict())
             
-            return self.clean_trade_data(trade)
+            trade_dict = new_trade.iloc[0].to_dict()
+            return self.clean_trade_data(trade_dict)
             
         except Exception as e:
             raise ValueError(f"Error adding trade: {str(e)}")
@@ -95,15 +108,15 @@ class TradeCalculator:
             partial_pl = self.calculate_profit_loss(trade['Entry Price'], exit_price, units_to_sell)
             partial_pl_percent = self.calculate_win_loss_percentage(trade['Entry Price'], exit_price)
             
-            # Record the sale
-            sale = {
-                'trade_id': trade_id,
-                'Date': datetime.now(),
-                'Units Sold': units_to_sell,
-                'Exit Price': exit_price,
-                'Partial P/L': partial_pl,
-                'Partial P/L %': partial_pl_percent
-            }
+            # Record the sale with proper types
+            sale = pd.DataFrame({
+                'trade_id': [trade_id],
+                'Date': [datetime.now()],
+                'Units Sold': [units_to_sell],
+                'Exit Price': [exit_price],
+                'Partial P/L': [partial_pl],
+                'Partial P/L %': [partial_pl_percent]
+            })
             
             # Update remaining units
             remaining_units = trade['Remaining Units'] - units_to_sell
@@ -115,12 +128,14 @@ class TradeCalculator:
                 remaining_units
             )
             
-            # Add to sales history
-            new_sale = pd.DataFrame([sale])
-            self.sales_history = pd.concat([self.sales_history, new_sale], ignore_index=True)
+            # Add to sales history with proper types
+            self.sales_history = pd.concat(
+                [self.sales_history, sale],
+                ignore_index=True
+            ).astype(self.sales_history.dtypes.to_dict())
             
             return {
-                'sale': self.clean_trade_data(sale),
+                'sale': self.clean_trade_data(sale.iloc[0].to_dict()),
                 'updated_trade': self.clean_trade_data(self.trades.iloc[trade_idx].to_dict())
             }
             

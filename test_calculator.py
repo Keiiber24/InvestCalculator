@@ -9,16 +9,16 @@ def main():
     print("-" * 50)
     
     # Test 1: Add an open trade
-    print("\nTest 1: Adding an open trade (AAPL)")
-    calc.add_trade("AAPL", 150.50, 100)
+    print("\nTest 1: Adding an open trade (BTC/USDT)")
+    calc.add_trade("BTC/USDT", 35000.00, 0.5)
     
-    # Test 2: Add a closed trade with profit
-    print("\nTest 2: Adding a closed trade with profit (GOOGL)")
-    calc.add_trade("GOOGL", 2750.00, 10, 2800.00, "Closed")
+    # Test 2: Add another open trade
+    print("\nTest 2: Adding another open trade (ETH/USDT)")
+    trade = calc.add_trade("ETH/USDT", 2000.00, 5)
     
-    # Test 3: Add a closed trade with loss
-    print("\nTest 3: Adding a closed trade with loss (MSFT)")
-    calc.add_trade("MSFT", 280.75, 50, 275.50, "Closed")
+    # Test 3: Sell some units from the ETH trade
+    print("\nTest 3: Selling partial units from ETH trade")
+    calc.sell_units(trade['id'], 2, 2100.00)
     
     # Display full summary
     print("\nFinal Trade Summary:")
