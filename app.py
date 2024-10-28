@@ -5,6 +5,9 @@ from financial_calculator import TradeCalculator
 import numpy as np
 import pandas as pd
 import traceback
+from flask_login import LoginManager
+from models.database import db
+from models.user import User
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -12,6 +15,22 @@ logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY") or "a secret key"
+
+# Configure SQLAlchemy
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///investment.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# Initialize SQLAlchemy
+db.init_app(app)
+
+# Initialize Flask-Login
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'login'
+
+@login_manager.user_loader
+def load_user(id):
+    return User.query.get(int(id))
 
 # Initialize the trade calculator
 trade_calculator = TradeCalculator()

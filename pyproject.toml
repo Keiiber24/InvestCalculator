@@ -11,4 +11,5 @@ dependencies = [
     "pandas>=2.2.3",
     "numpy>=2.1.2",
     "requests>=2.32.3",
+    "flask-login>=0.6.3",
 ]
