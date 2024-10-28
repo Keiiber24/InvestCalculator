@@ -10,7 +10,7 @@ class User(UserMixin, db.Model):
     password_hash = db.Column(db.String(128))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    # Relationship with trades
+    # Relationship with trades using string reference
     trades = db.relationship('Trade', backref='user', lazy=True)
 
     def set_password(self, password):
