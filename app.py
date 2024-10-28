@@ -6,9 +6,6 @@ import numpy as np
 import pandas as pd
 import traceback
 from flask_login import LoginManager, login_required, current_user
-from models.database import db
-from models import User, Trade
-from routes.auth import auth
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -21,6 +18,10 @@ def create_app():
     # Configure SQLAlchemy
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///investment.db'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+    # Import database and models
+    from models.database import db
+    from models import User, Trade
 
     # Initialize extensions
     db.init_app(app)
@@ -35,13 +36,11 @@ def create_app():
         return User.query.get(int(id))
 
     # Register blueprints
+    from routes.auth import auth
     app.register_blueprint(auth, url_prefix='/auth')
 
-    # Ensure all models are loaded
+    # Create all tables
     with app.app_context():
-        # Import all models to ensure they are registered
-        from models import User, Trade
-        # Create all tables
         db.create_all()
 
     return app
@@ -233,3 +232,6 @@ def get_latest_prices():
     except Exception as e:
         logger.error(f"Error fetching latest prices: {str(e)}")
         return jsonify({"error": "Failed to fetch latest prices"}), 500
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000)

@@ -12,7 +12,8 @@ class User(UserMixin, db.Model):
     password_hash = db.Column(db.String(128))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
-    # Remove the relationship definition from here as it's now in Trade model
+    # Define the relationship here with back_populates
+    trades = db.relationship('Trade', back_populates='user', lazy='dynamic')
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
