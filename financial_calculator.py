@@ -12,10 +12,14 @@ logger = logging.getLogger(__name__)
 pd.set_option('display.float_format', lambda x: '%.2f' % x)
 
 class TradeCalculator:
-    def __init__(self):
-        # Main trades DataFrame with proper dtypes
+    def __init__(self, user_id=None):
+        # Add user_id to instance
+        self.user_id = user_id
+        
+        # Update trades DataFrame with user_id column
         self.trades = pd.DataFrame({
             'id': pd.Series(dtype='int64'),
+            'user_id': pd.Series(dtype='int64'),  # Add user_id column
             'Date': pd.Series(dtype='datetime64[ns]'),
             'Market': pd.Series(dtype='string'),
             'Entry Price': pd.Series(dtype='float64'),
@@ -24,9 +28,10 @@ class TradeCalculator:
             'Position Size': pd.Series(dtype='float64')
         })
         
-        # Partial sales history DataFrame with proper dtypes
+        # Update sales_history DataFrame with user_id column
         self.sales_history = pd.DataFrame({
             'trade_id': pd.Series(dtype='int64'),
+            'user_id': pd.Series(dtype='int64'),  # Add user_id column
             'Date': pd.Series(dtype='datetime64[ns]'),
             'Units Sold': pd.Series(dtype='float64'),
             'Exit Price': pd.Series(dtype='float64'),
@@ -39,6 +44,12 @@ class TradeCalculator:
         if not self.api_key:
             logger.error("COINMARKETCAP_API_KEY environment variable is not set")
             raise ValueError("COINMARKETCAP_API_KEY environment variable is not set")
+
+    def validate_user(self, method_name):
+        """Validate user authentication"""
+        if not self.user_id:
+            raise ValueError(f"User authentication required for {method_name}")
+        return self.user_id
 
     def fetch_latest_prices(self, symbols):
         """Fetch latest prices from CoinMarketCap API with improved error handling"""
@@ -125,6 +136,9 @@ class TradeCalculator:
     def add_trade(self, market, entry_price, units):
         """Add a new trade with improved validation"""
         try:
+            # Validate user
+            user_id = self.validate_user('add_trade')
+            
             # Validate market format
             if not market or not isinstance(market, str):
                 raise ValueError("Market symbol is required and must be a string")
@@ -153,9 +167,10 @@ class TradeCalculator:
             # Calculate initial position size
             position_size = self.calculate_position_size(entry_price, units)
             
-            # Create new trade
+            # Create new trade with user_id
             new_trade = pd.DataFrame({
                 'id': [trade_id],
+                'user_id': [user_id],  # Add user_id
                 'Date': [datetime.utcnow()],
                 'Market': [market],
                 'Entry Price': [entry_price],
@@ -179,9 +194,17 @@ class TradeCalculator:
     def sell_units(self, trade_id, units_to_sell, exit_price):
         """Record a partial sale of units"""
         try:
-            trade_idx = self.trades.index[self.trades['id'] == trade_id].tolist()
+            # Validate user
+            user_id = self.validate_user('sell_units')
+            
+            # Find trade for specific user
+            trade_idx = self.trades.index[
+                (self.trades['id'] == trade_id) & 
+                (self.trades['user_id'] == user_id)
+            ].tolist()
+            
             if not trade_idx:
-                raise ValueError("Trade not found")
+                raise ValueError("Trade not found or unauthorized access")
             
             trade_idx = trade_idx[0]
             trade = self.trades.iloc[trade_idx]
@@ -196,9 +219,10 @@ class TradeCalculator:
             partial_pl = self.calculate_profit_loss(trade['Entry Price'], exit_price, units_to_sell)
             partial_pl_percent = self.calculate_win_loss_percentage(trade['Entry Price'], exit_price)
             
-            # Record the sale with proper types
+            # Record the sale with user_id
             sale = pd.DataFrame({
                 'trade_id': [trade_id],
+                'user_id': [user_id],  # Add user_id
                 'Date': [datetime.utcnow()],
                 'Units Sold': [units_to_sell],
                 'Exit Price': [exit_price],
@@ -232,16 +256,35 @@ class TradeCalculator:
 
     def get_trade_sales_history(self, trade_id):
         """Get sales history for a specific trade"""
-        sales = self.sales_history[self.sales_history['trade_id'] == trade_id]
+        # Validate user
+        user_id = self.validate_user('get_trade_sales_history')
+        
+        # Get sales history for specific user and trade
+        sales = self.sales_history[
+            (self.sales_history['trade_id'] == trade_id) &
+            (self.sales_history['user_id'] == user_id)
+        ]
         return self.clean_trade_data(sales.to_dict('records'))
 
     def get_trades_json(self):
         """Get trades data in JSON-serializable format"""
-        return self.clean_trade_data(self.trades.to_dict('records'))
+        # Validate user
+        user_id = self.validate_user('get_trades_json')
+        
+        # Get trades for specific user
+        user_trades = self.trades[self.trades['user_id'] == user_id]
+        return self.clean_trade_data(user_trades.to_dict('records'))
 
     def get_summary(self):
         """Get comprehensive trading summary"""
-        if self.trades.empty:
+        # Validate user
+        user_id = self.validate_user('get_summary')
+        
+        # Filter trades and sales for specific user
+        user_trades = self.trades[self.trades['user_id'] == user_id]
+        user_sales = self.sales_history[self.sales_history['user_id'] == user_id]
+        
+        if user_trades.empty:
             return {
                 'total_trades': 0,
                 'open_trades': 0,
@@ -259,16 +302,16 @@ class TradeCalculator:
                 'worst_performing': None
             }
 
-        # Calculate basic statistics
-        open_trades = self.trades[self.trades['Remaining Units'] > 0]
-        closed_trades = self.trades[self.trades['Remaining Units'] == 0]
+        # Calculate basic statistics using user-specific trades
+        open_trades = user_trades[user_trades['Remaining Units'] > 0]
+        closed_trades = user_trades[user_trades['Remaining Units'] == 0]
         
         # Fetch latest prices for open trades
         open_market_symbols = open_trades['Market'].unique().tolist()
         latest_prices = self.fetch_latest_prices(open_market_symbols)
         
-        # Calculate total P/L from sales
-        total_pl = self.sales_history['Partial P/L'].sum()
+        # Calculate total P/L from sales using user-specific sales
+        total_pl = user_sales['Partial P/L'].sum()
         
         # Add unrealized P/L from open positions using latest prices
         for _, trade in open_trades.iterrows():
@@ -281,12 +324,12 @@ class TradeCalculator:
                 )
                 total_pl += unrealized_pl
         
-        # Calculate win rate
-        profitable_sales = self.sales_history[self.sales_history['Partial P/L'] > 0]
-        win_rate = len(profitable_sales) / len(self.sales_history) * 100 if not self.sales_history.empty else 0
+        # Calculate win rate using user-specific sales
+        profitable_sales = user_sales[user_sales['Partial P/L'] > 0]
+        win_rate = len(profitable_sales) / len(user_sales) * 100 if not user_sales.empty else 0
         
         # Group trades by market and include latest prices
-        trades_by_market = self.trades.groupby('Market').agg({
+        trades_by_market = user_trades.groupby('Market').agg({
             'id': 'count',
             'Position Size': 'sum'
         }).reset_index()
@@ -295,30 +338,30 @@ class TradeCalculator:
         # Add Latest Price column
         trades_by_market['Latest Price'] = trades_by_market['Market'].map(latest_prices)
         
-        # Get best and worst performing trades based on P/L%
-        if not self.sales_history.empty:
-            best_sale = self.sales_history.loc[self.sales_history['Partial P/L %'].idxmax()]
-            worst_sale = self.sales_history.loc[self.sales_history['Partial P/L %'].idxmin()]
+        # Get best and worst performing trades based on P/L% from user's sales
+        if not user_sales.empty:
+            best_sale = user_sales.loc[user_sales['Partial P/L %'].idxmax()]
+            worst_sale = user_sales.loc[user_sales['Partial P/L %'].idxmin()]
             
-            best_trade = self.trades[self.trades['id'] == best_sale['trade_id']].iloc[0]
-            worst_trade = self.trades[self.trades['id'] == worst_sale['trade_id']].iloc[0]
+            best_trade = user_trades[user_trades['id'] == best_sale['trade_id']].iloc[0]
+            worst_trade = user_trades[user_trades['id'] == worst_sale['trade_id']].iloc[0]
         else:
             best_trade = None
             worst_trade = None
 
         summary = {
-            'total_trades': len(self.trades),
+            'total_trades': len(user_trades),
             'open_trades': len(open_trades),
             'closed_trades': len(closed_trades),
             'total_profit_loss': float(total_pl),
-            'avg_profit_loss_percent': float(self.sales_history['Partial P/L %'].mean()) if not self.sales_history.empty else 0,
-            'total_invested': float(self.trades['Position Size'].sum()),
+            'avg_profit_loss_percent': float(user_sales['Partial P/L %'].mean()) if not user_sales.empty else 0,
+            'total_invested': float(user_trades['Position Size'].sum()),
             'current_positions_value': float(open_trades['Position Size'].sum()),
-            'largest_position': float(self.trades['Position Size'].max()),
-            'avg_position_size': float(self.trades['Position Size'].mean()),
+            'largest_position': float(user_trades['Position Size'].max()),
+            'avg_position_size': float(user_trades['Position Size'].mean()),
             'win_rate': float(win_rate),
             'trades_by_market': trades_by_market.to_dict('records'),
-            'recent_trades': self.clean_trade_data(self.trades.sort_values('Date', ascending=False).head(5).to_dict('records')),
+            'recent_trades': self.clean_trade_data(user_trades.sort_values('Date', ascending=False).head(5).to_dict('records')),
             'best_performing': self.clean_trade_data(best_trade.to_dict()) if best_trade is not None else None,
             'worst_performing': self.clean_trade_data(worst_trade.to_dict()) if worst_trade is not None else None
         }
