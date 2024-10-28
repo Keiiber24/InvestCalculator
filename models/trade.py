@@ -13,9 +13,9 @@ class Trade(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'), nullable=False)
     
-    # Define relationship with Sale using lazy=True
-    sales = db.relationship('Sale', backref='trade', lazy=True,
-                          cascade='all, delete-orphan')
+    # Define relationship with Sale using string reference
+    sales = db.relationship('Sale', backref=db.backref('trade', lazy=True),
+                          lazy=True, cascade='all, delete-orphan')
 
     def __init__(self, market, entry_price, units, user_id):
         self.market = market

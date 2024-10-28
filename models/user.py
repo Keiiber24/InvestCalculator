@@ -12,8 +12,11 @@ class User(UserMixin, db.Model):
     password_hash = db.Column(db.String(128))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
-    # Define relationship with Trade
-    trades = db.relationship('Trade', backref='user', lazy='dynamic', cascade='all, delete-orphan')
+    # Define relationships using string references
+    trades = db.relationship('Trade', backref=db.backref('user', lazy=True), 
+                           lazy='dynamic', cascade='all, delete-orphan')
+    sales = db.relationship('Sale', backref=db.backref('user', lazy=True),
+                          lazy='dynamic', cascade='all, delete-orphan')
 
     def __init__(self, email, username, password=None):
         self.email = email
