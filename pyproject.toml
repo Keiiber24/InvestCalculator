@@ -13,4 +13,5 @@ dependencies = [
     "requests>=2.32.3",
     "flask-login>=0.6.3",
     "urllib3",
+    "werkzeug",
 ]

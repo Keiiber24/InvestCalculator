@@ -2,8 +2,8 @@
 from financial_calculator import TradeCalculator
 
 def main():
-    # Initialize calculator
-    calc = TradeCalculator()
+    # Initialize calculator with a test user ID
+    calc = TradeCalculator(user_id=1)
     
     print("Investment Portfolio Calculator Test")
     print("-" * 50)

@@ -446,6 +446,7 @@ dependencies = [
     { name = "psycopg2-binary" },
     { name = "requests" },
     { name = "urllib3" },
+    { name = "werkzeug" },
 ]
 
 [package.metadata]
@@ -459,6 +460,7 @@ requires-dist = [
     { name = "psycopg2-binary", specifier = ">=2.9.10" },
     { name = "requests", specifier = ">=2.32.3" },
     { name = "urllib3" },
+    { name = "werkzeug" },
 ]
 
 [[package]]

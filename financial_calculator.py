@@ -40,7 +40,7 @@ class TradeCalculator:
         })
         
         self.trade_counter = 0
-        self.api_key = os.getenv('COINMARKETCAP_API_KEY')
+        self.api_key = os.environ.get('COINMARKETCAP_API_KEY')
         if not self.api_key:
             logger.error("COINMARKETCAP_API_KEY environment variable is not set")
             raise ValueError("COINMARKETCAP_API_KEY environment variable is not set")
@@ -255,14 +255,17 @@ class TradeCalculator:
             if user_id is None:
                 raise ValueError("User ID is required")
 
+            logger.info(f"Looking for trade ID {trade_id} for user {user_id}")
+            logger.info(f"Available trades: {self.trades}")
+
             trade_idx = self.trades.index[
                 (self.trades['id'] == trade_id) & 
                 (self.trades['user_id'] == user_id)
             ].tolist()
 
             if not trade_idx:
-                raise ValueError("Trade not found")
-            
+                raise ValueError(f"Trade {trade_id} not found for user {user_id}")
+                
             trade_idx = trade_idx[0]
             trade = self.trades.iloc[trade_idx]
             
@@ -309,6 +312,7 @@ class TradeCalculator:
             }
             
         except Exception as e:
+            logger.error(f"Error processing sale: {str(e)}")
             raise ValueError(f"Error processing sale: {str(e)}")
 
     def get_trade_sales_history(self, trade_id, user_id=None):

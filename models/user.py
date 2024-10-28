@@ -1,7 +1,7 @@
-from .database import db
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
+from .database import db
 
 class User(UserMixin, db.Model):
     __tablename__ = 'user'
@@ -12,8 +12,14 @@ class User(UserMixin, db.Model):
     password_hash = db.Column(db.String(128))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
-    # Define the relationship here with back_populates
-    trades = db.relationship('Trade', back_populates='user', lazy='dynamic')
+    # Define relationship with Trade
+    trades = db.relationship('Trade', backref='user', lazy='dynamic', cascade='all, delete-orphan')
+
+    def __init__(self, email, username, password=None):
+        self.email = email
+        self.username = username
+        if password:
+            self.set_password(password)
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)

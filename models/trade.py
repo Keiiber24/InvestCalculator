@@ -1,5 +1,5 @@
-from .database import db
 from datetime import datetime
+from .database import db
 
 class Trade(db.Model):
     __tablename__ = 'trade'
@@ -11,10 +11,18 @@ class Trade(db.Model):
     remaining_units = db.Column(db.Float, nullable=False)
     position_size = db.Column(db.Float, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'), nullable=False)
     
-    # Define the relationship here with back_populates
-    user = db.relationship('User', back_populates='trades')
+    # Define relationship with Sale
+    sales = db.relationship('Sale', backref='trade', lazy='dynamic', cascade='all, delete-orphan')
+
+    def __init__(self, market, entry_price, units, user_id):
+        self.market = market
+        self.entry_price = entry_price
+        self.units = units
+        self.remaining_units = units
+        self.position_size = entry_price * units
+        self.user_id = user_id
 
     def __repr__(self):
         return f'<Trade {self.market} - {self.units}>'
