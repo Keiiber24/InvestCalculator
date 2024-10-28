@@ -13,9 +13,9 @@ class Trade(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'), nullable=False)
     
-    # Define relationship with Sale using string reference
-    sales = db.relationship('Sale', backref=db.backref('trade', lazy=True),
-                          lazy=True, cascade='all, delete-orphan')
+    # Define relationship with back_populates
+    user = db.relationship('User', back_populates='trades')
+    sales = db.relationship('Sale', back_populates='trade', cascade='all, delete-orphan')
 
     def __init__(self, market, entry_price, units, user_id):
         self.market = market
@@ -24,6 +24,11 @@ class Trade(db.Model):
         self.remaining_units = units
         self.position_size = entry_price * units
         self.user_id = user_id
+
+    def calculate_profit_loss(self, exit_price=None):
+        if exit_price:
+            return (exit_price - self.entry_price) * self.remaining_units
+        return 0
 
     def __repr__(self):
         return f'<Trade {self.market} - {self.units}>'

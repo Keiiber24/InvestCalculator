@@ -1,8 +1,10 @@
-from .database import db
+# First import the database
+from .database import db, login_manager
 
-# Import models at the bottom to avoid circular dependencies
+# Then import models in dependency order
 from .user import User
 from .trade import Trade
 from .sale import Sale
 
-__all__ = ['db', 'User', 'Trade', 'Sale']
+# Make sure database is initialized before models are used
+__all__ = ['db', 'login_manager', 'User', 'Trade', 'Sale']
