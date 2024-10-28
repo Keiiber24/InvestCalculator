@@ -13,8 +13,8 @@ class Sale(db.Model):
     profit_loss_percentage = db.Column(db.Float, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
-    # Add relationship with User
-    user = db.relationship('User', backref=db.backref('sales', lazy=True))
+    # Changed relationship without backref
+    user = db.relationship('User')
 
     def __init__(self, trade_id, units_sold, exit_price, entry_price, user_id):
         self.trade_id = trade_id

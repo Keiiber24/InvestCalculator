@@ -43,10 +43,11 @@ def create_app():
     from routes.auth import auth
     app.register_blueprint(auth, url_prefix='/auth')
 
-    # Create all tables
+    # Drop and recreate all tables
     with app.app_context():
         from models import User, Trade, Sale
-        db.create_all()
+        db.drop_all()  # Drop all existing tables
+        db.create_all()  # Create all tables
 
     return app
 
@@ -55,7 +56,7 @@ app = create_app()
 @app.route('/')
 @login_required
 def index():
-    return render_template('index.html')
+    return render_template('index.html', active_page='calculator')
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
