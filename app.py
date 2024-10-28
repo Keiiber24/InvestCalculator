@@ -24,10 +24,8 @@ def create_app():
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
     # Import database and models
-    from models import db, User
-    from models.trade import Trade
-    from models.sale import Sale
-
+    from models import db
+    
     # Initialize extensions
     db.init_app(app)
     
@@ -38,6 +36,7 @@ def create_app():
 
     @login_manager.user_loader
     def load_user(id):
+        from models import User
         return User.query.get(int(id))
 
     # Register blueprints
@@ -46,10 +45,17 @@ def create_app():
 
     # Create all tables
     with app.app_context():
+        from models import User, Trade, Sale
         db.create_all()
 
     return app
 
 app = create_app()
 
-# Rest of the file remains the same...
+@app.route('/')
+@login_required
+def index():
+    return render_template('index.html')
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000)

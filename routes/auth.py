@@ -18,7 +18,7 @@ def login():
             return redirect(url_for('auth.login'))
 
         login_user(user, remember=remember)
-        return redirect(url_for('index'))
+        return redirect(url_for('auth.login'))
 
     return render_template('auth/login.html')
 
