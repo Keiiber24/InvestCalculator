@@ -7,36 +7,46 @@ import pandas as pd
 import traceback
 from flask_login import LoginManager, login_required, current_user
 from models.database import db
-from models.user import User
+from models import User, Trade
 from routes.auth import auth
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-app = Flask(__name__)
-app.secret_key = os.environ.get("FLASK_SECRET_KEY") or "dev_key_only_for_development"
+def create_app():
+    app = Flask(__name__)
+    app.secret_key = os.environ.get("FLASK_SECRET_KEY") or "dev_key_only_for_development"
 
-# Configure SQLAlchemy
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///investment.db'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    # Configure SQLAlchemy
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///investment.db'
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# Initialize extensions
-db.init_app(app)
-login_manager = LoginManager()
-login_manager.init_app(app)
-login_manager.login_view = 'auth.login'
+    # Initialize extensions
+    db.init_app(app)
+    
+    # Initialize Login Manager
+    login_manager = LoginManager()
+    login_manager.init_app(app)
+    login_manager.login_view = 'auth.login'
 
-@login_manager.user_loader
-def load_user(id):
-    return User.query.get(int(id))
+    @login_manager.user_loader
+    def load_user(id):
+        return User.query.get(int(id))
 
-# Register blueprints
-app.register_blueprint(auth, url_prefix='/auth')
+    # Register blueprints
+    app.register_blueprint(auth, url_prefix='/auth')
 
-# Create tables
-with app.app_context():
-    db.create_all()
+    # Ensure all models are loaded
+    with app.app_context():
+        # Import all models to ensure they are registered
+        from models import User, Trade
+        # Create all tables
+        db.create_all()
+
+    return app
+
+app = create_app()
 
 # Initialize trade calculator (will be set per user)
 trade_calculator = None
@@ -135,8 +145,7 @@ def add_trade():
             trade = trade_calculator.add_trade(
                 market=data['market'],
                 entry_price=data['entryPrice'],
-                units=data['units'],
-                user_id=current_user.id
+                units=data['units']
             )
 
             trades_data = trade_calculator.get_trades_json()
@@ -174,8 +183,7 @@ def sell_units(trade_id):
             result = trade_calculator.sell_units(
                 trade_id=trade_id,
                 units_to_sell=data['units'],
-                exit_price=data['exitPrice'],
-                user_id=current_user.id
+                exit_price=data['exitPrice']
             )
 
             trades_data = trade_calculator.get_trades_json()
@@ -201,7 +209,7 @@ def sell_units(trade_id):
 @login_required
 def get_sales_history(trade_id):
     try:
-        sales_history = trade_calculator.get_trade_sales_history(trade_id, user_id=current_user.id)
+        sales_history = trade_calculator.get_trade_sales_history(trade_id)
         return jsonify({'salesHistory': sales_history})
     except Exception as e:
         logger.error(f"Error retrieving sales history: {str(e)}")
@@ -225,6 +233,3 @@ def get_latest_prices():
     except Exception as e:
         logger.error(f"Error fetching latest prices: {str(e)}")
         return jsonify({"error": "Failed to fetch latest prices"}), 500
-
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
