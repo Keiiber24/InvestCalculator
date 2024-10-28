@@ -12,14 +12,10 @@ logger = logging.getLogger(__name__)
 pd.set_option('display.float_format', lambda x: '%.2f' % x)
 
 class TradeCalculator:
-    def __init__(self, user_id=None):
-        # Store user_id
-        self.user_id = user_id
-        
+    def __init__(self):
         # Main trades DataFrame with proper dtypes
         self.trades = pd.DataFrame({
             'id': pd.Series(dtype='int64'),
-            'user_id': pd.Series(dtype='int64'),
             'Date': pd.Series(dtype='datetime64[ns]'),
             'Market': pd.Series(dtype='string'),
             'Entry Price': pd.Series(dtype='float64'),
@@ -31,7 +27,6 @@ class TradeCalculator:
         # Partial sales history DataFrame with proper dtypes
         self.sales_history = pd.DataFrame({
             'trade_id': pd.Series(dtype='int64'),
-            'user_id': pd.Series(dtype='int64'),
             'Date': pd.Series(dtype='datetime64[ns]'),
             'Units Sold': pd.Series(dtype='float64'),
             'Exit Price': pd.Series(dtype='float64'),
@@ -45,48 +40,20 @@ class TradeCalculator:
             logger.error("COINMARKETCAP_API_KEY environment variable is not set")
             raise ValueError("COINMARKETCAP_API_KEY environment variable is not set")
 
-    def validate_user(self, method_name):
-        if not self.user_id:
-            raise ValueError(f"User authentication required for {method_name}")
-        return self.user_id
-
     def fetch_latest_prices(self, symbols):
         """Fetch latest prices from CoinMarketCap API with improved error handling"""
         if not symbols:
-            logger.info("No symbols provided to fetch prices")
             return {}
         
         try:
             # Convert trading pair symbols to CoinMarketCap format
             formatted_symbols = []
             original_to_formatted = {}
-            
             for symbol in symbols:
-                # Validate market symbol format
-                if not isinstance(symbol, str):
-                    logger.error(f"Invalid symbol type: {type(symbol)}")
-                    continue
-                    
                 # Remove /USD or /USDT suffix and convert to uppercase
-                parts = symbol.split('/')
-                if len(parts) != 2:
-                    logger.error(f"Invalid market symbol format: {symbol}")
-                    continue
-                    
-                base_symbol = parts[0].upper()
-                quote_symbol = parts[1].upper()
-                
-                if quote_symbol not in ['USDT', 'USD']:
-                    logger.error(f"Unsupported quote currency: {quote_symbol}")
-                    continue
-                    
+                base_symbol = symbol.split('/')[0].upper()
                 formatted_symbols.append(base_symbol)
                 original_to_formatted[base_symbol] = symbol
-                logger.debug(f"Formatted {symbol} to {base_symbol}")
-            
-            if not formatted_symbols:
-                logger.error("No valid symbols to fetch after formatting")
-                return {}
             
             symbol_string = ','.join(formatted_symbols)
             logger.info(f"Fetching prices for symbols: {symbol_string}")
@@ -101,51 +68,29 @@ class TradeCalculator:
                 'Accept': 'application/json'
             }
 
-            logger.debug(f"Making API request to: {url}")
             response = requests.get(url, headers=headers, params=parameters)
             response.raise_for_status()
-            
             data = response.json()
-            logger.debug(f"API Response status: {response.status_code}")
             
             if 'data' not in data:
                 logger.error(f"No data in response: {data}")
-                if 'status' in data:
-                    logger.error(f"API Error: {data['status'].get('error_message')}")
                 return {}
             
             prices = {}
             for formatted_symbol, coin_data in data['data'].items():
-                try:
-                    if not coin_data.get('quote', {}).get('USD', {}).get('price'):
-                        logger.error(f"No price data for {formatted_symbol}")
-                        continue
-                        
+                if coin_data.get('quote', {}).get('USD', {}).get('price'):
                     original_symbol = original_to_formatted.get(formatted_symbol)
                     if original_symbol:
-                        price = coin_data['quote']['USD']['price']
-                        prices[original_symbol] = price
-                        logger.info(f"Got price for {original_symbol}: {price}")
-                    else:
-                        logger.error(f"No matching original symbol for {formatted_symbol}")
-                except KeyError as e:
-                    logger.error(f"Error extracting price data for {formatted_symbol}: {str(e)}")
-            
-            if not prices:
-                logger.warning("No valid prices fetched from API")
+                        prices[original_symbol] = coin_data['quote']['USD']['price']
+                        logger.info(f"Got price for {original_symbol}: {prices[original_symbol]}")
             
             return prices
 
         except requests.exceptions.RequestException as e:
             logger.error(f"Error making API request: {str(e)}")
-            if hasattr(e.response, 'text'):
-                logger.error(f"Response text: {e.response.text}")
-            return {}
-        except ValueError as e:
-            logger.error(f"Error parsing JSON response: {str(e)}")
             return {}
         except Exception as e:
-            logger.error(f"Unexpected error processing API response: {str(e)}")
+            logger.error(f"Error processing API response: {str(e)}")
             return {}
 
     def validate_numeric(self, value, field_name):
@@ -178,10 +123,8 @@ class TradeCalculator:
         return float(((exit_price - entry_price) / entry_price) * 100)
 
     def add_trade(self, market, entry_price, units):
-        """Add a new trade with user validation"""
+        """Add a new trade with improved validation"""
         try:
-            user_id = self.validate_user('add_trade')
-            
             # Validate market format
             if not market or not isinstance(market, str):
                 raise ValueError("Market symbol is required and must be a string")
@@ -210,10 +153,9 @@ class TradeCalculator:
             # Calculate initial position size
             position_size = self.calculate_position_size(entry_price, units)
             
-            # Create new trade with user_id
+            # Create new trade
             new_trade = pd.DataFrame({
                 'id': [trade_id],
-                'user_id': [user_id],
                 'Date': [datetime.utcnow()],
                 'Market': [market],
                 'Entry Price': [entry_price],
@@ -235,18 +177,11 @@ class TradeCalculator:
             raise ValueError(str(e))
 
     def sell_units(self, trade_id, units_to_sell, exit_price):
-        """Record a partial sale of units with user validation"""
+        """Record a partial sale of units"""
         try:
-            user_id = self.validate_user('sell_units')
-            
-            # Find trade for the current user
-            trade_idx = self.trades.index[
-                (self.trades['id'] == trade_id) & 
-                (self.trades['user_id'] == user_id)
-            ].tolist()
-            
+            trade_idx = self.trades.index[self.trades['id'] == trade_id].tolist()
             if not trade_idx:
-                raise ValueError("Trade not found or unauthorized")
+                raise ValueError("Trade not found")
             
             trade_idx = trade_idx[0]
             trade = self.trades.iloc[trade_idx]
@@ -261,10 +196,9 @@ class TradeCalculator:
             partial_pl = self.calculate_profit_loss(trade['Entry Price'], exit_price, units_to_sell)
             partial_pl_percent = self.calculate_win_loss_percentage(trade['Entry Price'], exit_price)
             
-            # Record the sale with user_id
+            # Record the sale with proper types
             sale = pd.DataFrame({
                 'trade_id': [trade_id],
-                'user_id': [user_id],
                 'Date': [datetime.utcnow()],
                 'Units Sold': [units_to_sell],
                 'Exit Price': [exit_price],
@@ -282,7 +216,7 @@ class TradeCalculator:
                 remaining_units
             )
             
-            # Add to sales history
+            # Add to sales history with proper types
             self.sales_history = pd.concat(
                 [self.sales_history, sale],
                 ignore_index=True
@@ -297,28 +231,17 @@ class TradeCalculator:
             raise ValueError(f"Error processing sale: {str(e)}")
 
     def get_trade_sales_history(self, trade_id):
-        """Get sales history for a specific trade with user validation"""
-        user_id = self.validate_user('get_trade_sales_history')
-        sales = self.sales_history[
-            (self.sales_history['trade_id'] == trade_id) & 
-            (self.sales_history['user_id'] == user_id)
-        ]
+        """Get sales history for a specific trade"""
+        sales = self.sales_history[self.sales_history['trade_id'] == trade_id]
         return self.clean_trade_data(sales.to_dict('records'))
 
     def get_trades_json(self):
-        """Get trades data in JSON-serializable format with user validation"""
-        user_id = self.validate_user('get_trades_json')
-        user_trades = self.trades[self.trades['user_id'] == user_id]
-        return self.clean_trade_data(user_trades.to_dict('records'))
+        """Get trades data in JSON-serializable format"""
+        return self.clean_trade_data(self.trades.to_dict('records'))
 
     def get_summary(self):
-        """Get comprehensive trading summary with user validation"""
-        user_id = self.validate_user('get_summary')
-        
-        # Filter trades by user
-        user_trades = self.trades[self.trades['user_id'] == user_id]
-        
-        if user_trades.empty:
+        """Get comprehensive trading summary"""
+        if self.trades.empty:
             return {
                 'total_trades': 0,
                 'open_trades': 0,
@@ -337,16 +260,15 @@ class TradeCalculator:
             }
 
         # Calculate basic statistics
-        open_trades = user_trades[user_trades['Remaining Units'] > 0]
-        closed_trades = user_trades[user_trades['Remaining Units'] == 0]
+        open_trades = self.trades[self.trades['Remaining Units'] > 0]
+        closed_trades = self.trades[self.trades['Remaining Units'] == 0]
         
         # Fetch latest prices for open trades
         open_market_symbols = open_trades['Market'].unique().tolist()
         latest_prices = self.fetch_latest_prices(open_market_symbols)
         
-        # Calculate total P/L from sales for this user
-        user_sales = self.sales_history[self.sales_history['user_id'] == user_id]
-        total_pl = user_sales['Partial P/L'].sum()
+        # Calculate total P/L from sales
+        total_pl = self.sales_history['Partial P/L'].sum()
         
         # Add unrealized P/L from open positions using latest prices
         for _, trade in open_trades.iterrows():
@@ -360,11 +282,11 @@ class TradeCalculator:
                 total_pl += unrealized_pl
         
         # Calculate win rate
-        profitable_sales = user_sales[user_sales['Partial P/L'] > 0]
-        win_rate = len(profitable_sales) / len(user_sales) * 100 if not user_sales.empty else 0
+        profitable_sales = self.sales_history[self.sales_history['Partial P/L'] > 0]
+        win_rate = len(profitable_sales) / len(self.sales_history) * 100 if not self.sales_history.empty else 0
         
         # Group trades by market and include latest prices
-        trades_by_market = user_trades.groupby('Market').agg({
+        trades_by_market = self.trades.groupby('Market').agg({
             'id': 'count',
             'Position Size': 'sum'
         }).reset_index()
@@ -374,29 +296,29 @@ class TradeCalculator:
         trades_by_market['Latest Price'] = trades_by_market['Market'].map(latest_prices)
         
         # Get best and worst performing trades based on P/L%
-        if not user_sales.empty:
-            best_sale = user_sales.loc[user_sales['Partial P/L %'].idxmax()]
-            worst_sale = user_sales.loc[user_sales['Partial P/L %'].idxmin()]
+        if not self.sales_history.empty:
+            best_sale = self.sales_history.loc[self.sales_history['Partial P/L %'].idxmax()]
+            worst_sale = self.sales_history.loc[self.sales_history['Partial P/L %'].idxmin()]
             
-            best_trade = user_trades[user_trades['id'] == best_sale['trade_id']].iloc[0]
-            worst_trade = user_trades[user_trades['id'] == worst_sale['trade_id']].iloc[0]
+            best_trade = self.trades[self.trades['id'] == best_sale['trade_id']].iloc[0]
+            worst_trade = self.trades[self.trades['id'] == worst_sale['trade_id']].iloc[0]
         else:
             best_trade = None
             worst_trade = None
 
         summary = {
-            'total_trades': len(user_trades),
+            'total_trades': len(self.trades),
             'open_trades': len(open_trades),
             'closed_trades': len(closed_trades),
             'total_profit_loss': float(total_pl),
-            'avg_profit_loss_percent': float(user_sales['Partial P/L %'].mean()) if not user_sales.empty else 0,
-            'total_invested': float(user_trades['Position Size'].sum()),
+            'avg_profit_loss_percent': float(self.sales_history['Partial P/L %'].mean()) if not self.sales_history.empty else 0,
+            'total_invested': float(self.trades['Position Size'].sum()),
             'current_positions_value': float(open_trades['Position Size'].sum()),
-            'largest_position': float(user_trades['Position Size'].max()),
-            'avg_position_size': float(user_trades['Position Size'].mean()),
+            'largest_position': float(self.trades['Position Size'].max()),
+            'avg_position_size': float(self.trades['Position Size'].mean()),
             'win_rate': float(win_rate),
             'trades_by_market': trades_by_market.to_dict('records'),
-            'recent_trades': self.clean_trade_data(user_trades.sort_values('Date', ascending=False).head(5).to_dict('records')),
+            'recent_trades': self.clean_trade_data(self.trades.sort_values('Date', ascending=False).head(5).to_dict('records')),
             'best_performing': self.clean_trade_data(best_trade.to_dict()) if best_trade is not None else None,
             'worst_performing': self.clean_trade_data(worst_trade.to_dict()) if worst_trade is not None else None
         }
