@@ -53,17 +53,40 @@ class TradeCalculator:
     def fetch_latest_prices(self, symbols):
         """Fetch latest prices from CoinMarketCap API with improved error handling"""
         if not symbols:
+            logger.info("No symbols provided to fetch prices")
             return {}
         
         try:
             # Convert trading pair symbols to CoinMarketCap format
             formatted_symbols = []
             original_to_formatted = {}
+            
             for symbol in symbols:
+                # Validate market symbol format
+                if not isinstance(symbol, str):
+                    logger.error(f"Invalid symbol type: {type(symbol)}")
+                    continue
+                    
                 # Remove /USD or /USDT suffix and convert to uppercase
-                base_symbol = symbol.split('/')[0].upper()
+                parts = symbol.split('/')
+                if len(parts) != 2:
+                    logger.error(f"Invalid market symbol format: {symbol}")
+                    continue
+                    
+                base_symbol = parts[0].upper()
+                quote_symbol = parts[1].upper()
+                
+                if quote_symbol not in ['USDT', 'USD']:
+                    logger.error(f"Unsupported quote currency: {quote_symbol}")
+                    continue
+                    
                 formatted_symbols.append(base_symbol)
                 original_to_formatted[base_symbol] = symbol
+                logger.debug(f"Formatted {symbol} to {base_symbol}")
+            
+            if not formatted_symbols:
+                logger.error("No valid symbols to fetch after formatting")
+                return {}
             
             symbol_string = ','.join(formatted_symbols)
             logger.info(f"Fetching prices for symbols: {symbol_string}")
@@ -78,29 +101,51 @@ class TradeCalculator:
                 'Accept': 'application/json'
             }
 
+            logger.debug(f"Making API request to: {url}")
             response = requests.get(url, headers=headers, params=parameters)
             response.raise_for_status()
+            
             data = response.json()
+            logger.debug(f"API Response status: {response.status_code}")
             
             if 'data' not in data:
                 logger.error(f"No data in response: {data}")
+                if 'status' in data:
+                    logger.error(f"API Error: {data['status'].get('error_message')}")
                 return {}
             
             prices = {}
             for formatted_symbol, coin_data in data['data'].items():
-                if coin_data.get('quote', {}).get('USD', {}).get('price'):
+                try:
+                    if not coin_data.get('quote', {}).get('USD', {}).get('price'):
+                        logger.error(f"No price data for {formatted_symbol}")
+                        continue
+                        
                     original_symbol = original_to_formatted.get(formatted_symbol)
                     if original_symbol:
-                        prices[original_symbol] = coin_data['quote']['USD']['price']
-                        logger.info(f"Got price for {original_symbol}: {prices[original_symbol]}")
+                        price = coin_data['quote']['USD']['price']
+                        prices[original_symbol] = price
+                        logger.info(f"Got price for {original_symbol}: {price}")
+                    else:
+                        logger.error(f"No matching original symbol for {formatted_symbol}")
+                except KeyError as e:
+                    logger.error(f"Error extracting price data for {formatted_symbol}: {str(e)}")
+            
+            if not prices:
+                logger.warning("No valid prices fetched from API")
             
             return prices
 
         except requests.exceptions.RequestException as e:
             logger.error(f"Error making API request: {str(e)}")
+            if hasattr(e.response, 'text'):
+                logger.error(f"Response text: {e.response.text}")
+            return {}
+        except ValueError as e:
+            logger.error(f"Error parsing JSON response: {str(e)}")
             return {}
         except Exception as e:
-            logger.error(f"Error processing API response: {str(e)}")
+            logger.error(f"Unexpected error processing API response: {str(e)}")
             return {}
 
     def validate_numeric(self, value, field_name):
