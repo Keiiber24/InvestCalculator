@@ -3,6 +3,12 @@ import numpy as np
 from datetime import datetime
 import os
 import requests
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 pd.set_option('display.float_format', lambda x: '%.2f' % x)
 
 class TradeCalculator:
@@ -31,22 +37,26 @@ class TradeCalculator:
         self.trade_counter = 0
         self.api_key = os.getenv('COINMARKETCAP_API_KEY')
         if not self.api_key:
+            logger.error("COINMARKETCAP_API_KEY environment variable is not set")
             raise ValueError("COINMARKETCAP_API_KEY environment variable is not set")
 
     def fetch_latest_prices(self, symbols):
-        """Fetch latest prices from CoinMarketCap API"""
+        """Fetch latest prices from CoinMarketCap API with improved error handling"""
         if not symbols:
             return {}
         
         try:
             # Convert trading pair symbols to CoinMarketCap format
             formatted_symbols = []
+            original_to_formatted = {}
             for symbol in symbols:
                 # Remove /USD or /USDT suffix and convert to uppercase
                 base_symbol = symbol.split('/')[0].upper()
                 formatted_symbols.append(base_symbol)
+                original_to_formatted[base_symbol] = symbol
             
             symbol_string = ','.join(formatted_symbols)
+            logger.info(f"Fetching prices for symbols: {symbol_string}")
             
             url = 'https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest'
             parameters = {
@@ -59,27 +69,28 @@ class TradeCalculator:
             }
 
             response = requests.get(url, headers=headers, params=parameters)
-            response.raise_for_status()  # Raise exception for bad status codes
+            response.raise_for_status()
             data = response.json()
             
             if 'data' not in data:
-                print(f"No data in response: {data}")
+                logger.error(f"No data in response: {data}")
                 return {}
-                
+            
             prices = {}
-            for symbol in formatted_symbols:
-                if symbol in data['data']:
-                    price = data['data'][symbol]['quote']['USD']['price']
-                    # Reconstruct original trading pair format
-                    original_symbol = next(s for s in symbols if s.startswith(symbol))
-                    prices[original_symbol] = price
-                    
+            for formatted_symbol, coin_data in data['data'].items():
+                if coin_data.get('quote', {}).get('USD', {}).get('price'):
+                    original_symbol = original_to_formatted.get(formatted_symbol)
+                    if original_symbol:
+                        prices[original_symbol] = coin_data['quote']['USD']['price']
+                        logger.info(f"Got price for {original_symbol}: {prices[original_symbol]}")
+            
             return prices
+
         except requests.exceptions.RequestException as e:
-            print(f"Error making API request: {str(e)}")
+            logger.error(f"Error making API request: {str(e)}")
             return {}
         except Exception as e:
-            print(f"Error processing API response: {str(e)}")
+            logger.error(f"Error processing API response: {str(e)}")
             return {}
 
     def validate_numeric(self, value, field_name):
@@ -145,7 +156,7 @@ class TradeCalculator:
             # Create new trade
             new_trade = pd.DataFrame({
                 'id': [trade_id],
-                'Date': [datetime.now()],
+                'Date': [datetime.utcnow()],
                 'Market': [market],
                 'Entry Price': [entry_price],
                 'Units': [units],
@@ -162,7 +173,7 @@ class TradeCalculator:
             return self.clean_trade_data(new_trade.iloc[0].to_dict())
             
         except Exception as e:
-            print(f"Error adding trade: {str(e)}")
+            logger.error(f"Error adding trade: {str(e)}")
             raise ValueError(str(e))
 
     def sell_units(self, trade_id, units_to_sell, exit_price):
@@ -188,7 +199,7 @@ class TradeCalculator:
             # Record the sale with proper types
             sale = pd.DataFrame({
                 'trade_id': [trade_id],
-                'Date': [datetime.now()],
+                'Date': [datetime.utcnow()],
                 'Units Sold': [units_to_sell],
                 'Exit Price': [exit_price],
                 'Partial P/L': [partial_pl],
