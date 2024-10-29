@@ -89,11 +89,54 @@ body {
     pointer-events: none;
 }
 
-.btn-nav i {
-    font-size: 1.1rem;
+/* Calculator Specific Styles */
+.card {
+    background: rgba(255, 255, 255, 0.05);
+    border: none;
+    backdrop-filter: blur(10px);
 }
 
-/* Responsive Navbar */
+.card-header {
+    background: rgba(26, 43, 60, 0.5);
+    border-bottom: 1px solid rgba(241, 196, 15, 0.1);
+}
+
+.form-control {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(241, 196, 15, 0.2);
+    color: var(--bs-text-light);
+}
+
+.form-control:focus {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: var(--bs-warning);
+    color: var(--bs-text-light);
+    box-shadow: 0 0 0 0.25rem rgba(241, 196, 15, 0.25);
+}
+
+.form-floating > .form-control:focus ~ label,
+.form-floating > .form-control:not(:placeholder-shown) ~ label {
+    color: var(--bs-warning);
+    transform: scale(0.85) translateY(-0.5rem) translateX(0.15rem);
+}
+
+.form-floating > label {
+    color: var(--bs-text-muted);
+}
+
+.btn-financial {
+    background: var(--nav-btn-gradient);
+    border: 1px solid rgba(241, 196, 15, 0.3);
+    color: var(--bs-warning);
+}
+
+.btn-financial:hover {
+    background: var(--nav-btn-gradient-hover);
+    border-color: var(--bs-warning);
+    color: var(--bs-warning);
+}
+
+/* Responsive Design */
 @media (max-width: 991.98px) {
     .nav-buttons {
         margin-top: 1rem;
@@ -106,10 +149,6 @@ body {
         justify-content: center;
     }
 
-    .btn-nav.me-2 {
-        margin-right: 0 !important;
-    }
-
     .navbar-nav + .navbar-nav {
         margin-top: 0.5rem;
         padding-top: 0.5rem;
@@ -117,5 +156,15 @@ body {
     }
 }
 
-/* Rest of the existing styles remain the same */
-[Previous CSS content from line 104 onwards...]
+/* Form Validation Styles */
+.was-validated .form-control:invalid,
+.form-control.is-invalid {
+    border-color: var(--bs-danger);
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' width='12' height='12' fill='none' stroke='%23dc3545'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath stroke-linejoin='round' d='M5.8 3.6h.4L6 6.5z'/%3e%3ccircle cx='6' cy='8.2' r='.6' fill='%23dc3545' stroke='none'/%3e%3c/svg%3e");
+}
+
+.was-validated .form-control:valid,
+.form-control.is-valid {
+    border-color: var(--bs-success);
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3e%3cpath fill='%23198754' d='M2.3 6.73.6 4.53c-.4-1.04.46-1.4 1.1-.8l1.1 1.4 3.4-3.8c.6-.63 1.6-.27 1.2.7l-4 4.6c-.43.5-.8.4-1.1.1z'/%3e%3c/svg%3e");
+}

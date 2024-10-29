@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 maximumFractionDigits: 2
             }).format(numValue);
         } catch (error) {
-            console.error('Error formatting currency:', error);
+            console.warn('Error formatting currency:', error);
             return '$0.00';
         }
     }
@@ -26,7 +26,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 maximumFractionDigits: isUnits ? 8 : 2
             }).format(numValue);
         } catch (error) {
-            console.error('Error formatting number:', error);
+            console.warn('Error formatting number:', error);
             return isUnits ? '0.00000000' : '0.00';
         }
     }
@@ -42,7 +42,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 maximumFractionDigits: 2
             }).format(numValue / 100);
         } catch (error) {
-            console.error('Error formatting percentage:', error);
+            console.warn('Error formatting percentage:', error);
             return '0.00%';
         }
     }
@@ -51,7 +51,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('[data-format]').forEach(element => {
         try {
             const format = element.dataset.format;
-            const value = element.textContent.trim();
+            let value = element.textContent.trim();
             
             // Skip empty or invalid elements
             if (!value || value === '-' || value === 'N/A') return;
@@ -74,19 +74,16 @@ document.addEventListener('DOMContentLoaded', function() {
                     console.warn('Unknown format type:', format);
             }
         } catch (error) {
-            console.error('Error formatting element:', error);
+            console.warn('Error formatting element:', error);
         }
     });
 
     // Apply color classes based on values with improved error handling
     document.querySelectorAll('[data-color-value]').forEach(element => {
         try {
-            const value = element.getAttribute('data-color-value');
-            
-            // Skip if value attribute is missing
-            if (!value) return;
-            
-            // Skip if value is not a number
+            const value = element.dataset.colorValue;
+            if (!value || value === '-' || value === 'N/A') return;
+
             const numValue = parseFloat(value);
             if (isNaN(numValue)) return;
 
@@ -100,7 +97,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 element.classList.add('text-danger');
             }
         } catch (error) {
-            console.error('Error applying color class:', error);
+            console.warn('Error applying color class:', error, 'to element:', element);
         }
     });
 
