@@ -1,10 +1,12 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, redirect, url_for, flash
 import os
 import logging
 from financial_calculator import TradeCalculator
 import numpy as np
 import pandas as pd
 import traceback
+from flask_login import LoginManager, login_user, logout_user, login_required, current_user
+from models.user import db, User
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -13,23 +15,91 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY") or "a secret key"
 
+# Database configuration
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///investment_calculator.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+db.init_app(app)
+
+# Flask-Login configuration
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'login'
+login_manager.login_message_category = 'info'
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
+
 # Initialize the trade calculator
 trade_calculator = TradeCalculator()
 
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        email = request.form.get('email')
+        password = request.form.get('password')
+        confirm_password = request.form.get('confirm_password')
+
+        if User.query.filter_by(email=email).first():
+            flash('Email already registered', 'danger')
+            return redirect(url_for('register'))
+
+        if password != confirm_password:
+            flash('Passwords do not match', 'danger')
+            return redirect(url_for('register'))
+
+        user = User(email=email)
+        user.set_password(password)
+        db.session.add(user)
+        db.session.commit()
+
+        flash('Registration successful! Please log in.', 'success')
+        return redirect(url_for('login'))
+
+    return render_template('register.html')
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        email = request.form.get('email')
+        password = request.form.get('password')
+        user = User.query.filter_by(email=email).first()
+
+        if user and user.check_password(password):
+            login_user(user)
+            flash('Logged in successfully!', 'success')
+            next_page = request.args.get('next')
+            return redirect(next_page or url_for('index'))
+        else:
+            flash('Invalid email or password', 'danger')
+
+    return render_template('login.html')
+
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    flash('Logged out successfully', 'success')
+    return redirect(url_for('login'))
+
 @app.route('/')
+@login_required
 def index():
     return render_template('index.html', active_page='calculator')
 
 @app.route('/trades')
+@login_required
 def trades():
     return render_template('trades.html', active_page='trades')
 
 @app.route('/summary')
+@login_required
 def summary():
     summary_data = trade_calculator.get_summary()
     return render_template('summary.html', active_page='summary', summary=summary_data)
 
 @app.route('/calculate', methods=['POST'])
+@login_required
 def calculate():
     try:
         data = request.get_json()
@@ -84,6 +154,7 @@ def calculate():
         return jsonify({"error": "An unexpected error occurred"}), 500
 
 @app.route('/add_trade', methods=['POST'])
+@login_required
 def add_trade():
     try:
         data = request.get_json()
@@ -125,6 +196,7 @@ def add_trade():
         return jsonify({"error": "An unexpected error occurred while processing the trade"}), 500
 
 @app.route('/sell_units/<int:trade_id>', methods=['POST'])
+@login_required
 def sell_units(trade_id):
     try:
         data = request.get_json()
@@ -168,6 +240,7 @@ def sell_units(trade_id):
         return jsonify({"error": "An unexpected error occurred while processing the sale"}), 500
 
 @app.route('/get_sales_history/<int:trade_id>')
+@login_required
 def get_sales_history(trade_id):
     try:
         sales_history = trade_calculator.get_trade_sales_history(trade_id)
@@ -175,6 +248,10 @@ def get_sales_history(trade_id):
     except Exception as e:
         logger.error(f"Error retrieving sales history: {str(e)}")
         return jsonify({"error": "Failed to retrieve sales history"}), 500
+
+# Create database tables
+with app.app_context():
+    db.create_all()
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
