@@ -79,30 +79,27 @@ document.addEventListener('DOMContentLoaded', function() {
         try {
             const rawValue = element.dataset.colorValue;
             
-            // Skip if no value attribute or empty value
+            // Skip if no value attribute
             if (!rawValue || rawValue.trim() === '') {
+                console.debug('Skipping element with no color value:', element);
                 return;
             }
 
-            // Parse the value, handling potential numeric strings
+            // Parse the value
             const value = parseFloat(rawValue);
             
             // Only proceed if we have a valid number
             if (!isNaN(value)) {
-                // Remove any existing color classes
                 element.classList.remove('text-success', 'text-danger');
-                
-                // Add appropriate color class
-                if (value > 0) {
-                    element.classList.add('text-success');
-                } else if (value < 0) {
-                    element.classList.add('text-danger');
-                }
+                element.classList.add(value > 0 ? 'text-success' : value < 0 ? 'text-danger' : '');
+            } else {
+                console.debug('Invalid numeric value:', rawValue);
             }
         } catch (error) {
-            console.error('Error applying color class:', error, {
-                element: element,
-                value: element.dataset.colorValue
+            console.warn('Error applying color class:', {
+                element: element.outerHTML,
+                value: element.dataset.colorValue,
+                error: error.message
             });
         }
     });
