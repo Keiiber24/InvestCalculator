@@ -13,7 +13,7 @@ class User(UserMixin, db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     active = db.Column(db.Boolean, default=True)
 
-    # Define relationships with back_populates
+    # Define relationship with trades only
     trades = db.relationship('Trade', 
                          back_populates='user',
                          lazy='dynamic',

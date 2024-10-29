@@ -12,10 +12,10 @@ class Sale(db.Model):
     profit_loss_percentage = db.Column(db.Float, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    # Define relationships with back_populates
+    # Define relationship with trade only
     trade = db.relationship('Trade', back_populates='sales')
 
-    def __init__(self, trade_id, units_sold, exit_price, entry_price, user_id=None):
+    def __init__(self, trade_id, units_sold, exit_price, entry_price):
         self.trade_id = trade_id
         self.units_sold = units_sold
         self.exit_price = exit_price

@@ -1,10 +1,10 @@
-# First import the database
+# First import the database instance
 from .database import db, login_manager
 
-# Then import models in dependency order
+# Import models in correct dependency order
 from .user import User
 from .trade import Trade
 from .sale import Sale
 
-# Make sure database is initialized before models are used
+# Make them available at package level
 __all__ = ['db', 'login_manager', 'User', 'Trade', 'Sale']
