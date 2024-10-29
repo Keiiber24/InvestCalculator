@@ -1,91 +1,180 @@
 from flask import Flask, render_template, request, jsonify
-from flask_login import login_required, current_user
 import os
 import logging
-from models import db, login_manager, User
 from financial_calculator import TradeCalculator
+import numpy as np
+import pandas as pd
+import traceback
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-def create_app():
-    app = Flask(__name__)
+app = Flask(__name__)
+app.secret_key = os.environ.get("FLASK_SECRET_KEY") or "a secret key"
 
-    # Configuration
-    app.config.update(
-        SECRET_KEY=os.environ.get("FLASK_SECRET_KEY", "dev_key_only_for_development"),
-        SQLALCHEMY_DATABASE_URI=f'sqlite:///{os.path.join(os.path.dirname(os.path.abspath(__file__)), "instance", "investment.db")}',
-        SQLALCHEMY_TRACK_MODIFICATIONS=False
-    )
+# Initialize the trade calculator
+trade_calculator = TradeCalculator()
 
-    # Ensure instance path exists
-    os.makedirs(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'instance'), exist_ok=True)
+@app.route('/')
+def index():
+    return render_template('index.html', active_page='calculator')
 
-    # Initialize extensions with app
-    db.init_app(app)
-    login_manager.init_app(app)
-    login_manager.login_view = 'auth.login'
+@app.route('/trades')
+def trades():
+    return render_template('trades.html', active_page='trades')
 
-    # Register blueprints
-    with app.app_context():
-        @app.route('/summary')
-        @login_required
-        def summary():
-            try:
-                return render_template('summary.html', active_page='summary')
-            except Exception as e:
-                logger.error(f"Error in summary route: {str(e)}")
-                return render_template('errors/500.html'), 500
+@app.route('/summary')
+def summary():
+    summary_data = trade_calculator.get_summary()
+    return render_template('summary.html', active_page='summary', summary=summary_data)
 
-        @app.route('/trades')
-        @login_required
-        def trades():
-            try:
-                return render_template('trades.html', active_page='trades')
-            except Exception as e:
-                logger.error(f"Error in trades route: {str(e)}")
-                return render_template('errors/500.html'), 500
+@app.route('/calculate', methods=['POST'])
+def calculate():
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "No data provided"}), 400
 
-        from routes.auth import auth
-        app.register_blueprint(auth, url_prefix='/auth')
+        # Log incoming request
+        logger.info(f"Calculate request received: {data}")
 
-        # Create all tables
-        db.create_all()
+        # Validate and convert numeric inputs
+        try:
+            capital_total = float(data.get('capitalTotal', 0))
+            risk_percentage = float(data.get('riskPercentage', 0))
+            entry_price = float(data.get('entryPrice', 0))
+            exit_price = float(data.get('exitPrice', 0))
+        except (ValueError, TypeError) as e:
+            logger.error(f"Invalid numeric input: {str(e)}")
+            return jsonify({"error": "Invalid numeric values provided"}), 400
 
-        # Error handlers
-        @app.errorhandler(404)
-        def not_found_error(error):
-            return render_template('errors/404.html'), 404
+        # Validate inputs
+        if any(pd.isna([capital_total, risk_percentage, entry_price, exit_price])):
+            return jsonify({"error": "Invalid numerical values provided"}), 400
 
-        @app.errorhandler(500)
-        def internal_error(error):
-            db.session.rollback()
-            return render_template('errors/500.html'), 500
+        if any(v <= 0 for v in [capital_total, entry_price, exit_price]):
+            return jsonify({"error": "Values must be greater than zero"}), 400
 
-        # User loader for Flask-Login
-        @login_manager.user_loader
-        def load_user(user_id):
-            try:
-                return User.query.get(int(user_id))
-            except Exception as e:
-                logger.error(f"Error loading user: {str(e)}")
-                return None
+        if not 0 < risk_percentage <= 100:
+            return jsonify({"error": "Risk percentage must be between 0 and 100"}), 400
 
-        # Routes
-        @app.route('/')
-        @login_required
-        def index():
-            try:
-                return render_template('index.html', active_page='calculator')
-            except Exception as e:
-                logger.error(f"Error in index route: {str(e)}")
-                return render_template('errors/500.html'), 500
+        # Perform calculations
+        capital_at_risk = capital_total * (risk_percentage / 100)
+        risk_per_unit = abs(entry_price - exit_price)
+        
+        if risk_per_unit == 0:
+            return jsonify({"error": "Entry price cannot equal exit price"}), 400
+            
+        position_size = capital_at_risk / risk_per_unit
+        total_position_value = position_size * entry_price
 
-    return app
+        result = {
+            'capitalAtRisk': round(capital_at_risk, 2),
+            'riskPerUnit': round(risk_per_unit, 2),
+            'positionSize': round(position_size, 2),
+            'totalPositionValue': round(total_position_value, 2)
+        }
 
-# Create the application instance
-app = create_app()
+        logger.info(f"Calculation successful: {result}")
+        return jsonify(result)
 
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+    except Exception as e:
+        logger.error(f"Unexpected error: {str(e)}\n{traceback.format_exc()}")
+        return jsonify({"error": "An unexpected error occurred"}), 500
+
+@app.route('/add_trade', methods=['POST'])
+def add_trade():
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "No data provided"}), 400
+
+        # Log incoming request
+        logger.info(f"Add trade request received: {data}")
+
+        # Validate required fields
+        required_fields = ['market', 'entryPrice', 'units']
+        missing_fields = [field for field in required_fields if field not in data]
+        if missing_fields:
+            return jsonify({"error": f"Missing required fields: {', '.join(missing_fields)}"}), 400
+
+        # Add the trade using the calculator
+        try:
+            trade = trade_calculator.add_trade(
+                market=data['market'],
+                entry_price=data['entryPrice'],
+                units=data['units']
+            )
+
+            # Get trades data
+            trades_data = trade_calculator.get_trades_json()
+            
+            logger.info(f"Trade added successfully: {trade}")
+            return jsonify({
+                'trades': trades_data,
+                'newTrade': trade
+            })
+
+        except ValueError as e:
+            logger.error(f"Trade validation error: {str(e)}")
+            return jsonify({"error": str(e)}), 400
+
+    except Exception as e:
+        logger.error(f"Unexpected error in add_trade: {str(e)}\n{traceback.format_exc()}")
+        return jsonify({"error": "An unexpected error occurred while processing the trade"}), 500
+
+@app.route('/sell_units/<int:trade_id>', methods=['POST'])
+def sell_units(trade_id):
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "No data provided"}), 400
+
+        # Log incoming request
+        logger.info(f"Sell units request received for trade {trade_id}: {data}")
+
+        required_fields = ['units', 'exitPrice']
+        missing_fields = [field for field in required_fields if field not in data]
+        if missing_fields:
+            return jsonify({"error": f"Missing required fields: {', '.join(missing_fields)}"}), 400
+
+        # Process the sale
+        try:
+            result = trade_calculator.sell_units(
+                trade_id=trade_id,
+                units_to_sell=data['units'],
+                exit_price=data['exitPrice']
+            )
+
+            # Get updated trades data and sales history
+            trades_data = trade_calculator.get_trades_json()
+            sales_history = trade_calculator.get_trade_sales_history(trade_id)
+            
+            logger.info(f"Units sold successfully: {result}")
+            return jsonify({
+                'trades': trades_data,
+                'salesHistory': sales_history,
+                'sale': result['sale'],
+                'updatedTrade': result['updated_trade']
+            })
+
+        except ValueError as e:
+            logger.error(f"Sale validation error: {str(e)}")
+            return jsonify({"error": str(e)}), 400
+
+    except Exception as e:
+        logger.error(f"Unexpected error in sell_units: {str(e)}\n{traceback.format_exc()}")
+        return jsonify({"error": "An unexpected error occurred while processing the sale"}), 500
+
+@app.route('/get_sales_history/<int:trade_id>')
+def get_sales_history(trade_id):
+    try:
+        sales_history = trade_calculator.get_trade_sales_history(trade_id)
+        return jsonify({'salesHistory': sales_history})
+    except Exception as e:
+        logger.error(f"Error retrieving sales history: {str(e)}")
+        return jsonify({"error": "Failed to retrieve sales history"}), 500
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000)

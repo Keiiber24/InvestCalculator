@@ -282,14 +282,6 @@ document.addEventListener('DOMContentLoaded', function() {
             return 0;
         });
 
-        // Get unique markets for price updates
-        const markets = [...new Set(filteredTrades.map(trade => trade.Market))];
-        
-        // Fetch latest prices
-        if (markets.length > 0) {
-            fetchLatestPrices(markets);
-        }
-
         tradesTableBody.innerHTML = filteredTrades.map(trade => {
             const isOpen = trade['Remaining Units'] > 0;
             const statusBadge = isOpen ? 
@@ -297,7 +289,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 '<span class="badge bg-secondary">Closed</span>';
             
             return `
-                <tr data-trade-id="${trade.id}" data-market="${trade.Market}">
+                <tr data-trade-id="${trade.id}">
                     <td>${new Date(trade.Date).toLocaleString()}</td>
                     <td>${trade.Market}</td>
                     <td>${formatCurrency(trade['Entry Price'])}</td>
@@ -305,7 +297,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     <td>${formatNumber(trade['Remaining Units'], true)}</td>
                     <td>${formatCurrency(trade['Position Size'])}</td>
                     <td>${statusBadge}</td>
-                    <td class="latest-price" data-market="${trade.Market}">Loading...</td>
                     <td>
                         <div class="btn-group">
                             <button class="btn btn-sm btn-outline-info view-history-btn" title="View History">
@@ -339,60 +330,6 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
     }
-
-    async function fetchLatestPrices(markets) {
-        try {
-            const response = await fetch('/get_latest_prices', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ markets }),
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to fetch latest prices');
-            }
-
-            const result = await response.json();
-            
-            // Update price cells
-            Object.entries(result.prices).forEach(([market, price]) => {
-                const cells = document.querySelectorAll(`.latest-price[data-market="${market}"]`);
-                cells.forEach(cell => {
-                    cell.textContent = formatCurrency(price);
-                    
-                    // Get the original entry price for comparison
-                    const row = cell.closest('tr');
-                    const entryPrice = parseFloat(row.children[2].textContent.replace(/[^0-9.-]+/g, ''));
-                    
-                    // Add color based on price comparison
-                    cell.classList.remove('text-success', 'text-danger');
-                    if (price > entryPrice) {
-                        cell.classList.add('text-success');
-                    } else if (price < entryPrice) {
-                        cell.classList.add('text-danger');
-                    }
-                });
-            });
-
-        } catch (error) {
-            console.error('Error fetching latest prices:', error);
-            document.querySelectorAll('.latest-price').forEach(cell => {
-                if (cell.textContent === 'Loading...') {
-                    cell.textContent = 'N/A';
-                }
-            });
-        }
-    }
-
-    // Set up periodic price updates every 30 seconds
-    setInterval(() => {
-        const markets = [...new Set(trades.map(trade => trade.Market))];
-        if (markets.length > 0) {
-            fetchLatestPrices(markets);
-        }
-    }, 30000);
 
     async function openSaleModal(tradeId, mode = 'history') {
         const trade = trades.find(t => t.id === tradeId);
