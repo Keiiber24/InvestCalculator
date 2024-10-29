@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 maximumFractionDigits: 2
             }).format(numValue);
         } catch (error) {
-            console.error('Error formatting currency:', error);
+            console.error('Error formatting currency:', error.message);
             return '$0.00';
         }
     }
@@ -26,7 +26,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 maximumFractionDigits: isUnits ? 8 : 2
             }).format(numValue);
         } catch (error) {
-            console.error('Error formatting number:', error);
+            console.error('Error formatting number:', error.message);
             return isUnits ? '0.00000000' : '0.00';
         }
     }
@@ -42,7 +42,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 maximumFractionDigits: 2
             }).format(numValue / 100);
         } catch (error) {
-            console.error('Error formatting percentage:', error);
+            console.error('Error formatting percentage:', error.message);
             return '0.00%';
         }
     }
@@ -52,9 +52,13 @@ document.addEventListener('DOMContentLoaded', function() {
         try {
             const format = element.dataset.format;
             const value = element.textContent.trim();
-            if (!value) return;
+            
+            // Skip empty or invalid elements
+            if (!value || value === '-' || value === 'N/A') return;
 
+            // Parse numeric value, handling currency symbols
             const numValue = parseFloat(value.replace(/[^-\d.]/g, ''));
+            if (isNaN(numValue)) return;
             
             switch (format) {
                 case 'currency':
@@ -70,38 +74,37 @@ document.addEventListener('DOMContentLoaded', function() {
                     console.warn('Unknown format type:', format);
             }
         } catch (error) {
-            console.error('Error formatting element:', error, '\nElement:', element);
+            console.error('Error formatting element:', error.message);
         }
     });
 
     // Apply color classes based on values with improved error handling
     document.querySelectorAll('[data-color-value]').forEach(element => {
         try {
-            if (!element || !element.dataset) {
-                throw new Error('Invalid element or missing dataset');
-            }
+            const value = element.dataset.colorValue;
+            
+            // Skip if value is missing or invalid
+            if (!value || value === '-' || value === 'N/A') return;
 
-            const colorValue = element.dataset.colorValue;
-            if (colorValue === undefined || colorValue === null || colorValue === '') {
-                throw new Error('Missing or invalid color value');
-            }
-
-            const value = parseFloat(colorValue);
-            if (isNaN(value)) {
-                throw new Error(`Invalid numeric value: ${colorValue}`);
-            }
+            const numValue = parseFloat(value);
+            if (isNaN(numValue)) return;
 
             // Remove existing color classes first
             element.classList.remove('text-success', 'text-danger');
             
             // Add appropriate color class
-            if (value > 0) {
+            if (numValue > 0) {
                 element.classList.add('text-success');
-            } else if (value < 0) {
+            } else if (numValue < 0) {
                 element.classList.add('text-danger');
             }
         } catch (error) {
-            console.error('Error applying color class:', error.message, '\nElement:', element);
+            console.error('Error applying color class:', error.message);
         }
     });
+
+    // Auto-refresh prices every 60 seconds
+    setInterval(() => {
+        window.location.reload();
+    }, 60000);
 });
