@@ -83,7 +83,6 @@ def logout():
     return redirect(url_for('login'))
 
 @app.route('/')
-@login_required
 def index():
     return render_template('index.html', active_page='calculator')
 
@@ -99,7 +98,6 @@ def summary():
     return render_template('summary.html', active_page='summary', summary=summary_data)
 
 @app.route('/calculate', methods=['POST'])
-@login_required
 def calculate():
     try:
         data = request.get_json()
