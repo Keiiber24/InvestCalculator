@@ -77,17 +77,21 @@ document.addEventListener('DOMContentLoaded', function() {
     // Apply color classes based on values with improved error handling
     document.querySelectorAll('[data-color-value]').forEach(element => {
         try {
-            // Only proceed if the data-color-value attribute exists and has a value
-            if (!element.hasAttribute('data-color-value') || 
-                element.dataset.colorValue === undefined || 
-                element.dataset.colorValue === '') {
+            const rawValue = element.dataset.colorValue;
+            
+            // Skip if no value attribute or empty value
+            if (!rawValue || rawValue.trim() === '') {
                 return;
             }
 
-            const value = parseFloat(element.dataset.colorValue);
+            // Parse the value, handling potential numeric strings
+            const value = parseFloat(rawValue);
+            
+            // Only proceed if we have a valid number
             if (!isNaN(value)) {
-                // Remove existing color classes first
+                // Remove any existing color classes
                 element.classList.remove('text-success', 'text-danger');
+                
                 // Add appropriate color class
                 if (value > 0) {
                     element.classList.add('text-success');
@@ -96,7 +100,28 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
         } catch (error) {
-            console.error('Error applying color class:', error);
+            console.error('Error applying color class:', error, {
+                element: element,
+                value: element.dataset.colorValue
+            });
         }
     });
+
+    // Refresh data periodically (every 60 seconds)
+    function refreshData() {
+        fetch('/summary')
+            .then(response => response.text())
+            .then(html => {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                document.querySelector('.container').innerHTML = doc.querySelector('.container').innerHTML;
+                
+                // Reapply formatting and color classes
+                document.dispatchEvent(new Event('DOMContentLoaded'));
+            })
+            .catch(error => console.error('Error refreshing data:', error));
+    }
+
+    // Start periodic refresh
+    setInterval(refreshData, 60000);
 });
