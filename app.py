@@ -29,6 +29,24 @@ def create_app():
 
     # Register blueprints
     with app.app_context():
+        @app.route('/summary')
+        @login_required
+        def summary():
+            try:
+                return render_template('summary.html', active_page='summary')
+            except Exception as e:
+                logger.error(f"Error in summary route: {str(e)}")
+                return render_template('errors/500.html'), 500
+
+        @app.route('/trades')
+        @login_required
+        def trades():
+            try:
+                return render_template('trades.html', active_page='trades')
+            except Exception as e:
+                logger.error(f"Error in trades route: {str(e)}")
+                return render_template('errors/500.html'), 500
+
         from routes.auth import auth
         app.register_blueprint(auth, url_prefix='/auth')
 
