@@ -118,7 +118,7 @@
                                         <td>{{ trade.Market|default('N/A') }}</td>
                                         <td>{{ "%.8f"|format(trade.Units|default(0)) }}</td>
                                         <td>
-                                            {% if trade.Remaining_Units > 0 %}
+                                            {% if trade['Remaining Units']|float > 0 %}
                                             <span class="badge bg-success">Open</span>
                                             {% else %}
                                             <span class="badge bg-secondary">Closed</span>

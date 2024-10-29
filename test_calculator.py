@@ -1,30 +1,37 @@
 #!/usr/bin/env python3
+import logging
 from financial_calculator import TradeCalculator
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__main__)
 
 def main():
     # Initialize calculator
     calc = TradeCalculator()
     
-    print("Investment Portfolio Calculator Test")
-    print("-" * 50)
+    # Test CoinMarketCap API integration
+    test_symbols = ['BTC/USDT', 'ETH/USDT']
+    logger.info(f"Testing price fetch for symbols: {test_symbols}")
+    prices = calc.fetch_latest_prices(test_symbols)
+    logger.info(f"Fetched prices: {prices}")
     
-    # Test 1: Add an open trade
-    print("\nTest 1: Adding an open trade (BTC/USDT)")
-    calc.add_trade("BTC/USDT", 35000.00, 0.5)
+    # Add test trades
+    logger.info("Adding test trades")
+    for symbol in test_symbols:
+        if symbol in prices:
+            trade = calc.add_trade(symbol, prices[symbol], 0.5)
+            logger.info(f"Added trade for {symbol}: {trade}")
     
-    # Test 2: Add another open trade
-    print("\nTest 2: Adding another open trade (ETH/USDT)")
-    trade = calc.add_trade("ETH/USDT", 2000.00, 5)
+    # Get and display summary to verify price updates
+    logger.info("Getting trade summary")
+    summary = calc.get_summary()
     
-    # Test 3: Sell some units from the ETH trade
-    print("\nTest 3: Selling partial units from ETH trade")
-    calc.sell_units(trade['id'], 2, 2100.00)
-    
-    # Display full summary
-    print("\nFinal Trade Summary:")
-    print("=" * 80)
-    print(calc.get_summary())
-    print("=" * 80)
+    # Log trades by market to verify latest prices
+    logger.info("Trades by market:")
+    for market in summary['trades_by_market']:
+        logger.info(f"Market: {market['Market']}")
+        logger.info(f"Latest Price: {market.get('Latest Price')}")
 
 if __name__ == "__main__":
     main()

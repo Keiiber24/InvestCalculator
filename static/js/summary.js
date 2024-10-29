@@ -70,33 +70,38 @@ document.addEventListener('DOMContentLoaded', function() {
                     console.warn('Unknown format type:', format);
             }
         } catch (error) {
-            console.error('Error formatting element:', error);
+            console.error('Error formatting element:', error, '\nElement:', element);
         }
     });
 
     // Apply color classes based on values with improved error handling
     document.querySelectorAll('[data-color-value]').forEach(element => {
         try {
-            // Only proceed if the data-color-value attribute exists and has a value
-            if (!element.hasAttribute('data-color-value') || 
-                element.dataset.colorValue === undefined || 
-                element.dataset.colorValue === '') {
-                return;
+            if (!element || !element.dataset) {
+                throw new Error('Invalid element or missing dataset');
             }
 
-            const value = parseFloat(element.dataset.colorValue);
-            if (!isNaN(value)) {
-                // Remove existing color classes first
-                element.classList.remove('text-success', 'text-danger');
-                // Add appropriate color class
-                if (value > 0) {
-                    element.classList.add('text-success');
-                } else if (value < 0) {
-                    element.classList.add('text-danger');
-                }
+            const colorValue = element.dataset.colorValue;
+            if (colorValue === undefined || colorValue === null || colorValue === '') {
+                throw new Error('Missing or invalid color value');
+            }
+
+            const value = parseFloat(colorValue);
+            if (isNaN(value)) {
+                throw new Error(`Invalid numeric value: ${colorValue}`);
+            }
+
+            // Remove existing color classes first
+            element.classList.remove('text-success', 'text-danger');
+            
+            // Add appropriate color class
+            if (value > 0) {
+                element.classList.add('text-success');
+            } else if (value < 0) {
+                element.classList.add('text-danger');
             }
         } catch (error) {
-            console.error('Error applying color class:', error);
+            console.error('Error applying color class:', error.message, '\nElement:', element);
         }
     });
 });
