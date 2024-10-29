@@ -77,48 +77,26 @@ document.addEventListener('DOMContentLoaded', function() {
     // Apply color classes based on values with improved error handling
     document.querySelectorAll('[data-color-value]').forEach(element => {
         try {
-            const rawValue = element.dataset.colorValue;
-            
-            // Skip if no value attribute
-            if (!rawValue || rawValue.trim() === '') {
-                console.debug('Skipping element with no color value:', element);
+            // Only proceed if the data-color-value attribute exists and has a value
+            if (!element.hasAttribute('data-color-value') || 
+                element.dataset.colorValue === undefined || 
+                element.dataset.colorValue === '') {
                 return;
             }
 
-            // Parse the value
-            const value = parseFloat(rawValue);
-            
-            // Only proceed if we have a valid number
+            const value = parseFloat(element.dataset.colorValue);
             if (!isNaN(value)) {
+                // Remove existing color classes first
                 element.classList.remove('text-success', 'text-danger');
-                element.classList.add(value > 0 ? 'text-success' : value < 0 ? 'text-danger' : '');
-            } else {
-                console.debug('Invalid numeric value:', rawValue);
+                // Add appropriate color class
+                if (value > 0) {
+                    element.classList.add('text-success');
+                } else if (value < 0) {
+                    element.classList.add('text-danger');
+                }
             }
         } catch (error) {
-            console.warn('Error applying color class:', {
-                element: element.outerHTML,
-                value: element.dataset.colorValue,
-                error: error.message
-            });
+            console.error('Error applying color class:', error);
         }
     });
-
-    // Refresh data periodically (every 60 seconds)
-    function refreshData() {
-        fetch('/summary')
-            .then(response => response.text())
-            .then(html => {
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(html, 'text/html');
-                document.querySelector('.container').innerHTML = doc.querySelector('.container').innerHTML;
-                
-                // Reapply formatting and color classes
-                document.dispatchEvent(new Event('DOMContentLoaded'));
-            })
-            .catch(error => console.error('Error refreshing data:', error));
-    }
-
-    // Start periodic refresh
-    setInterval(refreshData, 60000);
 });

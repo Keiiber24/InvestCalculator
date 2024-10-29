@@ -3,12 +3,6 @@ import numpy as np
 from datetime import datetime
 import os
 import requests
-import logging
-
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
 pd.set_option('display.float_format', lambda x: '%.2f' % x)
 
 class TradeCalculator:
@@ -36,20 +30,11 @@ class TradeCalculator:
         
         self.trade_counter = 0
         self.api_key = os.getenv('COINMARKETCAP_API_KEY')
-        if not self.api_key:
-            logger.warning("CoinMarketCap API key not found in environment variables")
 
     def fetch_latest_prices(self, symbols):
         """Fetch latest prices from CoinMarketCap API"""
         if not symbols:
-            logger.info("No symbols provided to fetch prices")
             return {}
-
-        # Mock data for development/fallback
-        mock_prices = {
-            'BTC/USDT': 35000.00,
-            'ETH/USDT': 2000.00,
-        }
         
         # Convert trading pair symbols to CoinMarketCap format
         formatted_symbols = []
@@ -59,12 +44,7 @@ class TradeCalculator:
             formatted_symbols.append(base_symbol)
         
         symbol_string = ','.join(formatted_symbols)
-        logger.info(f"Fetching prices for symbols: {symbol_string}")
         
-        if not self.api_key:
-            logger.warning("No API key available, returning mock data")
-            return {symbol: mock_prices.get(symbol, 0.0) for symbol in symbols}
-
         url = 'https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest'
         parameters = {
             'symbol': symbol_string,
@@ -76,24 +56,11 @@ class TradeCalculator:
         }
 
         try:
-            logger.info(f"Making API request to CoinMarketCap for {symbol_string}")
-            response = requests.get(url, headers=headers, params=parameters, timeout=10)
-            
-            # Log the response status
-            logger.info(f"API Response Status: {response.status_code}")
-            
-            if response.status_code != 200:
-                logger.error(f"API request failed with status {response.status_code}")
-                logger.info("Falling back to mock data")
-                return {symbol: mock_prices.get(symbol, 0.0) for symbol in symbols}
-
+            response = requests.get(url, headers=headers, params=parameters)
             data = response.json()
-            logger.debug(f"API Response Data: {data}")
             
             if 'data' not in data:
-                logger.error("Invalid API response format - 'data' key missing")
-                logger.info("Falling back to mock data")
-                return {symbol: mock_prices.get(symbol, 0.0) for symbol in symbols}
+                return {}
                 
             prices = {}
             for symbol in formatted_symbols:
@@ -102,22 +69,25 @@ class TradeCalculator:
                     # Reconstruct original trading pair format
                     original_symbol = next(s for s in symbols if s.startswith(symbol))
                     prices[original_symbol] = price
-                    logger.info(f"Fetched price for {original_symbol}: ${price:.2f}")
-                else:
-                    logger.warning(f"No price data available for {symbol}")
-                    prices[symbol] = mock_prices.get(symbol, 0.0)
                     
             return prices
-            
-        except requests.exceptions.Timeout:
-            logger.error("API request timed out")
-            return {symbol: mock_prices.get(symbol, 0.0) for symbol in symbols}
-        except requests.exceptions.RequestException as e:
-            logger.error(f"API request failed: {str(e)}")
-            return {symbol: mock_prices.get(symbol, 0.0) for symbol in symbols}
         except Exception as e:
-            logger.error(f"Unexpected error fetching prices: {str(e)}")
-            return {symbol: mock_prices.get(symbol, 0.0) for symbol in symbols}
+            print(f"Error fetching prices: {str(e)}")
+            return {}
+
+    def validate_numeric(self, value, field_name):
+        """Validate numeric input"""
+        if value is None or value == '':
+            return None
+        try:
+            value = float(value)
+            if pd.isna(value):
+                return None
+            if value < 0:
+                raise ValueError(f"{field_name} cannot be negative")
+            return value
+        except (ValueError, TypeError):
+            raise ValueError(f"Invalid numeric value for {field_name}")
 
     def add_trade(self, market, entry_price, units):
         """Add a new trade with simplified parameters"""
@@ -126,10 +96,13 @@ class TradeCalculator:
             if not market or not isinstance(market, str):
                 raise ValueError("Market symbol is required and must be a string")
             
-            if entry_price is None or not isinstance(entry_price, (int, float)) or entry_price <= 0:
+            entry_price = self.validate_numeric(entry_price, "Entry price")
+            units = self.validate_numeric(units, "Units")
+            
+            if entry_price is None:
                 raise ValueError("Entry price is required and must be a positive number")
             
-            if units is None or not isinstance(units, (int, float)) or units <= 0:
+            if units is None:
                 raise ValueError("Units is required and must be a positive number")
             
             # Generate unique trade ID
@@ -144,10 +117,10 @@ class TradeCalculator:
                 'id': [trade_id],
                 'Date': [datetime.now()],
                 'Market': [market.upper()],
-                'Entry Price': [float(entry_price)],
-                'Units': [float(units)],
-                'Remaining Units': [float(units)],
-                'Position Size': [float(position_size)]
+                'Entry Price': [entry_price],
+                'Units': [units],
+                'Remaining Units': [units],
+                'Position Size': [position_size]
             })
             
             # Concatenate with explicit dtypes
@@ -172,11 +145,8 @@ class TradeCalculator:
             trade_idx = trade_idx[0]
             trade = self.trades.iloc[trade_idx]
             
-            if not isinstance(units_to_sell, (int, float)) or units_to_sell <= 0:
-                raise ValueError("Units to sell must be a positive number")
-            
-            if not isinstance(exit_price, (int, float)) or exit_price <= 0:
-                raise ValueError("Exit price must be a positive number")
+            units_to_sell = self.validate_numeric(units_to_sell, "Units to sell")
+            exit_price = self.validate_numeric(exit_price, "Exit price")
             
             if units_to_sell > trade['Remaining Units']:
                 raise ValueError("Cannot sell more units than remaining")
@@ -189,10 +159,10 @@ class TradeCalculator:
             sale = pd.DataFrame({
                 'trade_id': [trade_id],
                 'Date': [datetime.now()],
-                'Units Sold': [float(units_to_sell)],
-                'Exit Price': [float(exit_price)],
-                'Partial P/L': [float(partial_pl)],
-                'Partial P/L %': [float(partial_pl_percent)]
+                'Units Sold': [units_to_sell],
+                'Exit Price': [exit_price],
+                'Partial P/L': [partial_pl],
+                'Partial P/L %': [partial_pl_percent]
             })
             
             # Update remaining units
